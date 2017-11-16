@@ -1,4 +1,4 @@
-# Ignore compiled files
+# Ignore compiled and generated files
 *.o
 *.ko
 *.o.cmd
@@ -7,6 +7,11 @@
 modules.order
 Module.symvers
 *.mod.c
+*.deps
+*.la
+*.lo
+*.in
+util-linux-2.31/*/Makefile
 
 # Mac stuff
 .DS_Store
