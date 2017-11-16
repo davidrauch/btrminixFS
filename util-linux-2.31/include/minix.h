@@ -22,7 +22,8 @@ struct minix2_inode {
 	uint32_t i_atime;
 	uint32_t i_mtime;
 	uint32_t i_ctime;
-	uint32_t i_zone[10];
+	uint32_t i_zone[9];
+	uint32_t magic_stuff; // We'll do something with this
 };
 
 struct minix_super_block {
@@ -60,7 +61,7 @@ struct minix3_super_block {
  */
 #define MINIX_MAXPARTITIONS  4
 
-#define MINIX_BLOCK_SIZE_BITS 10
+#define MINIX_BLOCK_SIZE_BITS 12 // Force 4k blocks to we don't need triple indirect zones
 #define MINIX_BLOCK_SIZE     (1 << MINIX_BLOCK_SIZE_BITS)
 
 #define MINIX_NAME_MAX       255             /* # chars in a file name */
