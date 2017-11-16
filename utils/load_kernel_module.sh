@@ -1,2 +1,2 @@
 #!/bin/sh
-sudo insmod ./altminix.ko
+sudo insmod ./minix/altminix.ko
