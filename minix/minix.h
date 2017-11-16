@@ -3,7 +3,7 @@
 
 #include <linux/fs.h>
 #include <linux/pagemap.h>
-#include <linux/minix_fs.h>
+#include "minix_fs.h"
 
 #define INODE_VERSION(inode)	minix_sb(inode->i_sb)->s_version
 #define MINIX_V1		0x0001		/* original minix fs */
