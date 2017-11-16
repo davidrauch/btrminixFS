@@ -8,3 +8,5 @@ modules.order
 Module.symvers
 *.mod.c
 
+# Mac stuff
+.DS_Store
