@@ -166,19 +166,25 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
 	struct minix_sb_info *sbi;
 	int ret = -EINVAL;
 
+	printk("ALTMINIX: Loading super block\n");
+
 	sbi = kzalloc(sizeof(struct minix_sb_info), GFP_KERNEL);
 	if (!sbi)
 		return -ENOMEM;
 	s->s_fs_info = sbi;
-
+	
 	BUILD_BUG_ON(32 != sizeof (struct minix_inode));
 	BUILD_BUG_ON(64 != sizeof(struct minix2_inode));
 
-	if (!sb_set_blocksize(s, BLOCK_SIZE))
+	if (!sb_set_blocksize(s, BLOCK_SIZE)) {
+		printk("\tbad_hblock\n");
 		goto out_bad_hblock;
+	}
 
-	if (!(bh = sb_bread(s, 1)))
+	if (!(bh = sb_bread(s, 1))) {
+		printk("\tbad_sb\n");
 		goto out_bad_sb;
+	}
 
 	ms = (struct minix_super_block *) bh->b_data;
 	sbi->s_ms = ms;
@@ -215,23 +221,35 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
 		sbi->s_namelen = 30;
 		s->s_max_links = MINIX2_LINK_MAX;
 	} else if ( *(__u16 *)(bh->b_data + 24) == MINIX3_SUPER_MAGIC) {
+		printk("\tMinix is version 3\n");
 		m3s = (struct minix3_super_block *) bh->b_data;
 		s->s_magic = m3s->s_magic;
+		printk("\tmagic is %ld\n", s->s_magic);
 		sbi->s_imap_blocks = m3s->s_imap_blocks;
+		printk("\timap_blocks is %ld\n", sbi->s_imap_blocks);
 		sbi->s_zmap_blocks = m3s->s_zmap_blocks;
+		printk("\tzmap_blocks is %ld\n", sbi->s_zmap_blocks);
 		sbi->s_firstdatazone = m3s->s_firstdatazone;
+		printk("\tfirstdatazone is %ld\n", sbi->s_firstdatazone);
 		sbi->s_log_zone_size = m3s->s_log_zone_size;
+		printk("\tlog_size is %ld\n", sbi->s_log_zone_size);
 		sbi->s_max_size = m3s->s_max_size;
+		printk("\tmax_size is %ld\n", sbi->s_max_size);
 		sbi->s_ninodes = m3s->s_ninodes;
+		printk("\tninodes is %ld\n", sbi->s_ninodes);
 		sbi->s_nzones = m3s->s_zones;
+		printk("\tzones is %ld\n", sbi->s_nzones);
 		sbi->s_dirsize = 64;
 		sbi->s_namelen = 60;
 		sbi->s_version = MINIX_V3;
 		sbi->s_mount_state = MINIX_VALID_FS;
+		printk("\tblocksize is %d\n", m3s->s_blocksize);
 		sb_set_blocksize(s, m3s->s_blocksize);
 		s->s_max_links = MINIX2_LINK_MAX;
-	} else
+	} else {
+		printk("\tno_fs\n");
 		goto out_no_fs;
+	}
 
 	/*
 	 * Allocate the buffer map to keep the superblock small.
@@ -516,7 +534,7 @@ static struct inode *V2_minix_iget(struct inode *inode)
 	inode->i_atime.tv_nsec = 0;
 	inode->i_ctime.tv_nsec = 0;
 	inode->i_blocks = 0;
-	for (i = 0; i < 10; i++)
+	for (i = 0; i < NUM_ZONES_IN_INODE; i++)
 		minix_inode->u.i2_data[i] = raw_inode->i_zone[i];
 	minix_set_inode(inode, old_decode_dev(raw_inode->i_zone[0]));
 	brelse(bh);
@@ -593,7 +611,7 @@ static struct buffer_head * V2_minix_update_inode(struct inode * inode)
 	raw_inode->i_ctime = inode->i_ctime.tv_sec;
 	if (S_ISCHR(inode->i_mode) || S_ISBLK(inode->i_mode))
 		raw_inode->i_zone[0] = old_encode_dev(inode->i_rdev);
-	else for (i = 0; i < 10; i++)
+	else for (i = 0; i < NUM_ZONES_IN_INODE; i++)
 		raw_inode->i_zone[i] = minix_inode->u.i2_data[i];
 	mark_buffer_dirty(bh);
 	return bh;

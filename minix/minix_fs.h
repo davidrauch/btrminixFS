@@ -27,6 +27,9 @@
 
 #define MINIX_INODES_PER_BLOCK ((BLOCK_SIZE)/(sizeof (struct minix_inode)))
 
+
+#define NUM_ZONES_IN_INODE	10
+
 /*
  * This is the original minix inode layout on disk.
  * Note the 8-bit gid and atime and ctime.
@@ -56,7 +59,7 @@ struct minix2_inode {
 	__u32 i_atime;
 	__u32 i_mtime;
 	__u32 i_ctime;
-	__u32 i_zone[10];
+	__u32 i_zone[NUM_ZONES_IN_INODE];
 };
 
 /*

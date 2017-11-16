@@ -190,11 +190,19 @@ static void write_tables(const struct fs_control *ctl) {
 				   " in write_tables"), ctl->device_name);
 	if (write_all(ctl->device_fd, boot_block_buffer, 512))
 		err(MKFS_EX_ERROR, _("%s: unable to clear boot sector"), ctl->device_name);
-	if (MINIX_BLOCK_SIZE != lseek(ctl->device_fd, MINIX_BLOCK_SIZE, SEEK_SET))
+
+	// The Boot- and Superblock are only 1k, even when the block size is configured differently
+	if (MINIX_SUPERBLOCK_SIZE != lseek(ctl->device_fd, MINIX_SUPERBLOCK_SIZE, SEEK_SET))
 		err(MKFS_EX_ERROR, _("%s: seek failed in write_tables"), ctl->device_name);
 
-	if (write_all(ctl->device_fd, super_block_buffer, MINIX_BLOCK_SIZE))
+	if (write_all(ctl->device_fd, super_block_buffer, MINIX_SUPERBLOCK_SIZE))
 		err(MKFS_EX_ERROR, _("%s: unable to write super-block"), ctl->device_name);
+
+	// Linux just assumes that all blocks have the same size...
+	// This is not correct. Boot- and Superblock are always 1k, no matter what block size is configured
+	// Therefore, we have to pad this to an entire normal block size so the default Linux implementation can read it
+	if (2*MINIX_BLOCK_SIZE != lseek(ctl->device_fd, 2*MINIX_BLOCK_SIZE, SEEK_SET))
+		err(MKFS_EX_ERROR, _("%s: padding seek failed in write_tables"), ctl->device_name);
 
 	if (write_all(ctl->device_fd, inode_map, imaps * MINIX_BLOCK_SIZE))
 		err(MKFS_EX_ERROR, _("%s: unable to write inode map"), ctl->device_name);
@@ -496,7 +504,7 @@ static void super_set_magic(const struct fs_control *ctl)
 static void setup_tables(const struct fs_control *ctl) {
 	unsigned long inodes, zmaps, imaps, zones, i;
 
-	super_block_buffer = xcalloc(1, MINIX_BLOCK_SIZE);
+	super_block_buffer = xcalloc(1, MINIX_SUPERBLOCK_SIZE);
 
 	memset(boot_block_buffer,0,512);
 	super_set_magic(ctl);

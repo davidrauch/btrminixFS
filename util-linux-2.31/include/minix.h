@@ -63,6 +63,7 @@ struct minix3_super_block {
 
 #define MINIX_BLOCK_SIZE_BITS 12 // Force 4k blocks to we don't need triple indirect zones
 #define MINIX_BLOCK_SIZE     (1 << MINIX_BLOCK_SIZE_BITS)
+#define MINIX_SUPERBLOCK_SIZE (1 << 10) // The superblock is 1k, no matter how large all other blocks are
 
 #define MINIX_NAME_MAX       255             /* # chars in a file name */
 #define MINIX_MAX_INODES     65535
