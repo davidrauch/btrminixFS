@@ -1,0 +1,9 @@
+# Ignore compiled files
+*.o
+*.ko
+*.o.cmd
+*.ko.cmd
+.tmp_versions
+modules.order
+Module.symvers
+
