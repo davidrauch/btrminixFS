@@ -658,12 +658,12 @@ static struct dentry *minix_mount(struct file_system_type *fs_type,
 
 static struct file_system_type minix_fs_type = {
 	.owner		= THIS_MODULE,
-	.name		= "minix",
+	.name		= "altminix",
 	.mount		= minix_mount,
 	.kill_sb	= kill_block_super,
 	.fs_flags	= FS_REQUIRES_DEV,
 };
-MODULE_ALIAS_FS("minix");
+MODULE_ALIAS_FS("altminix");
 
 static int __init init_minix_fs(void)
 {
