@@ -507,6 +507,16 @@ static struct inode *V1_minix_iget(struct inode *inode)
 	return inode;
 }
 
+
+/*
+ * Unsets the write bits of a mode and returns the new mode
+ */
+static uint16_t minix_mode_without_write_bits(uint16_t mode) {
+	const uint16_t mask = 0xff6d; // All bits set except the write bits
+	return mode & mask;
+}
+
+
 /*
  * The minix V2 function to read an inode.
  */
@@ -522,7 +532,10 @@ static struct inode *V2_minix_iget(struct inode *inode)
 		iget_failed(inode);
 		return ERR_PTR(-EIO);
 	}
-	inode->i_mode = raw_inode->i_mode;
+
+	// Read real mode from new location
+	inode->i_mode = raw_inode->i_real_mode;
+
 	i_uid_write(inode, raw_inode->i_uid);
 	i_gid_write(inode, raw_inode->i_gid);
 	set_nlink(inode, raw_inode->i_nlinks);
@@ -601,7 +614,14 @@ static struct buffer_head * V2_minix_update_inode(struct inode * inode)
 	raw_inode = minix_V2_raw_inode(inode->i_sb, inode->i_ino, &bh);
 	if (!raw_inode)
 		return NULL;
-	raw_inode->i_mode = inode->i_mode;
+
+	// Write the nonwrite version of the mode as legacy mode
+	raw_inode->i_mode = minix_mode_without_write_bits(inode->i_mode);
+	printk("ALTMINIX: Set legacy mode to %d\n", raw_inode->i_mode);
+	// Write the real mode
+	raw_inode->i_real_mode = inode->i_mode;
+	printk("ALTMINIX: Set real mode to %d\n", raw_inode->i_real_mode);
+
 	raw_inode->i_uid = fs_high2lowuid(i_uid_read(inode));
 	raw_inode->i_gid = fs_high2lowgid(i_gid_read(inode));
 	raw_inode->i_nlinks = inode->i_nlink;
