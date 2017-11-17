@@ -92,6 +92,29 @@ static inline unsigned minix_blocks_needed(unsigned bits, unsigned blocksize)
 	return DIV_ROUND_UP(bits, blocksize * 8);
 }
 
+// For debugging
+#define PRINT_TO_KERNEL_LOG	true
+
+static inline void debug_log(const char* format, ...) {
+	// Declarations
+	va_list arg;
+	const char *prefix = "ALTMINIX: ";
+	char result[strlen(prefix)+strlen(format)]; // +1 for the null-terminator
+
+	// ALTMINIX prefix
+    strcpy(result, prefix);
+    strcat(result, format);
+
+    if(!PRINT_TO_KERNEL_LOG) {
+		return;
+	}
+	// Forward to printk()
+	va_start (arg, format);
+	vprintk ((const char*)result, arg);
+	va_end (arg);
+}
+
+// Byte order specific stuff
 #if defined(CONFIG_MINIX_FS_NATIVE_ENDIAN) && \
 	defined(CONFIG_MINIX_FS_BIG_ENDIAN_16BIT_INDEXED)
 

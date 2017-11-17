@@ -146,10 +146,10 @@ static int minix_remount (struct super_block * sb, int * flags, char * data)
 		mark_buffer_dirty(sbi->s_sbh);
 
 		if (!(sbi->s_mount_state & MINIX_VALID_FS))
-			printk("MINIX-fs warning: remounting unchecked fs, "
+			debug_log("MINIX-fs warning: remounting unchecked fs, "
 				"running fsck is recommended\n");
 		else if ((sbi->s_mount_state & MINIX_ERROR_FS))
-			printk("MINIX-fs warning: remounting fs with errors, "
+			debug_log("MINIX-fs warning: remounting fs with errors, "
 				"running fsck is recommended\n");
 	}
 	return 0;
@@ -166,7 +166,7 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
 	struct minix_sb_info *sbi;
 	int ret = -EINVAL;
 
-	printk("ALTMINIX: Loading super block\n");
+	debug_log("Loading super block\n");
 
 	sbi = kzalloc(sizeof(struct minix_sb_info), GFP_KERNEL);
 	if (!sbi)
@@ -177,12 +177,12 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
 	BUILD_BUG_ON(64 != sizeof(struct minix2_inode));
 
 	if (!sb_set_blocksize(s, BLOCK_SIZE)) {
-		printk("\tbad_hblock\n");
+		debug_log("- bad_hblock\n");
 		goto out_bad_hblock;
 	}
 
 	if (!(bh = sb_bread(s, 1))) {
-		printk("\tbad_sb\n");
+		debug_log("- bad_sb\n");
 		goto out_bad_sb;
 	}
 
@@ -221,33 +221,33 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
 		sbi->s_namelen = 30;
 		s->s_max_links = MINIX2_LINK_MAX;
 	} else if ( *(__u16 *)(bh->b_data + 24) == MINIX3_SUPER_MAGIC) {
-		printk("\tMinix is version 3\n");
+		debug_log("- Minix is version 3\n");
 		m3s = (struct minix3_super_block *) bh->b_data;
 		s->s_magic = m3s->s_magic;
-		printk("\tmagic is %ld\n", s->s_magic);
+		debug_log("- magic is %ld\n", s->s_magic);
 		sbi->s_imap_blocks = m3s->s_imap_blocks;
-		printk("\timap_blocks is %ld\n", sbi->s_imap_blocks);
+		debug_log("- imap_blocks is %ld\n", sbi->s_imap_blocks);
 		sbi->s_zmap_blocks = m3s->s_zmap_blocks;
-		printk("\tzmap_blocks is %ld\n", sbi->s_zmap_blocks);
+		debug_log("- zmap_blocks is %ld\n", sbi->s_zmap_blocks);
 		sbi->s_firstdatazone = m3s->s_firstdatazone;
-		printk("\tfirstdatazone is %ld\n", sbi->s_firstdatazone);
+		debug_log("- firstdatazone is %ld\n", sbi->s_firstdatazone);
 		sbi->s_log_zone_size = m3s->s_log_zone_size;
-		printk("\tlog_size is %ld\n", sbi->s_log_zone_size);
+		debug_log("- log_size is %ld\n", sbi->s_log_zone_size);
 		sbi->s_max_size = m3s->s_max_size;
-		printk("\tmax_size is %ld\n", sbi->s_max_size);
+		debug_log("- max_size is %ld\n", sbi->s_max_size);
 		sbi->s_ninodes = m3s->s_ninodes;
-		printk("\tninodes is %ld\n", sbi->s_ninodes);
+		debug_log("- ninodes is %ld\n", sbi->s_ninodes);
 		sbi->s_nzones = m3s->s_zones;
-		printk("\tzones is %ld\n", sbi->s_nzones);
+		debug_log("- zones is %ld\n", sbi->s_nzones);
 		sbi->s_dirsize = 64;
 		sbi->s_namelen = 60;
 		sbi->s_version = MINIX_V3;
 		sbi->s_mount_state = MINIX_VALID_FS;
-		printk("\tblocksize is %d\n", m3s->s_blocksize);
+		debug_log("- blocksize is %d\n", m3s->s_blocksize);
 		sb_set_blocksize(s, m3s->s_blocksize);
 		s->s_max_links = MINIX2_LINK_MAX;
 	} else {
-		printk("\tno_fs\n");
+		debug_log("- no_fs\n");
 		goto out_no_fs;
 	}
 
@@ -617,10 +617,10 @@ static struct buffer_head * V2_minix_update_inode(struct inode * inode)
 
 	// Write the nonwrite version of the mode as legacy mode
 	raw_inode->i_mode = minix_mode_without_write_bits(inode->i_mode);
-	printk("ALTMINIX: Set legacy mode to %d\n", raw_inode->i_mode);
+	debug_log("Set legacy mode to %d\n", raw_inode->i_mode);
 	// Write the real mode
 	raw_inode->i_real_mode = inode->i_mode;
-	printk("ALTMINIX: Set real mode to %d\n", raw_inode->i_real_mode);
+	debug_log("Set real mode to %d\n", raw_inode->i_real_mode);
 
 	raw_inode->i_uid = fs_high2lowuid(i_uid_read(inode));
 	raw_inode->i_gid = fs_high2lowgid(i_gid_read(inode));
