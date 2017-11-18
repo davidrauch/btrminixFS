@@ -26,6 +26,8 @@ static int minix_remount (struct super_block * sb, int * flags, char * data);
 
 static void minix_evict_inode(struct inode *inode)
 {
+	PRINT_FUNC();
+
 	truncate_inode_pages_final(&inode->i_data);
 	if (!inode->i_nlink) {
 		inode->i_size = 0;
@@ -62,6 +64,9 @@ static struct kmem_cache * minix_inode_cachep;
 static struct inode *minix_alloc_inode(struct super_block *sb)
 {
 	struct minix_inode_info *ei;
+
+	PRINT_FUNC();
+
 	ei = kmem_cache_alloc(minix_inode_cachep, GFP_KERNEL);
 	if (!ei)
 		return NULL;
@@ -76,6 +81,8 @@ static void minix_i_callback(struct rcu_head *head)
 
 static void minix_destroy_inode(struct inode *inode)
 {
+	PRINT_FUNC();
+
 	call_rcu(&inode->i_rcu, minix_i_callback);
 }
 
@@ -401,11 +408,13 @@ static int minix_get_block(struct inode *inode, sector_t block,
 
 static int minix_writepage(struct page *page, struct writeback_control *wbc)
 {
+	PRINT_FUNC();
 	return block_write_full_page(page, minix_get_block, wbc);
 }
 
 static int minix_readpage(struct file *file, struct page *page)
 {
+	PRINT_FUNC();
 	return block_read_full_page(page,minix_get_block);
 }
 
@@ -429,6 +438,12 @@ static int minix_write_begin(struct file *file, struct address_space *mapping,
 			struct page **pagep, void **fsdata)
 {
 	int ret;
+
+	PRINT_FUNC();
+	debug_log("- file: %x\n", file);
+	debug_log("  - inode: %x\n", file->f_inode);
+	debug_log("- pos: %d\n", pos);
+	debug_log("- len: %d\n", len);
 
 	ret = block_write_begin(mapping, pos, len, flags, pagep,
 				minix_get_block);
@@ -617,10 +632,8 @@ static struct buffer_head * V2_minix_update_inode(struct inode * inode)
 
 	// Write the nonwrite version of the mode as legacy mode
 	raw_inode->i_mode = minix_mode_without_write_bits(inode->i_mode);
-	debug_log("Set legacy mode to %d\n", raw_inode->i_mode);
 	// Write the real mode
 	raw_inode->i_real_mode = inode->i_mode;
-	debug_log("Set real mode to %d\n", raw_inode->i_real_mode);
 
 	raw_inode->i_uid = fs_high2lowuid(i_uid_read(inode));
 	raw_inode->i_gid = fs_high2lowgid(i_gid_read(inode));
@@ -641,6 +654,8 @@ static int minix_write_inode(struct inode *inode, struct writeback_control *wbc)
 {
 	int err = 0;
 	struct buffer_head *bh;
+
+	PRINT_FUNC();
 
 	if (INODE_VERSION(inode) == MINIX_V1)
 		bh = V1_minix_update_inode(inode);

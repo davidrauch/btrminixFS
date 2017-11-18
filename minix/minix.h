@@ -114,6 +114,8 @@ static inline void debug_log(const char* format, ...) {
 	va_end (arg);
 }
 
+#define PRINT_FUNC() debug_log("%s called", __func__);
+
 // Byte order specific stuff
 #if defined(CONFIG_MINIX_FS_NATIVE_ENDIAN) && \
 	defined(CONFIG_MINIX_FS_BIG_ENDIAN_16BIT_INDEXED)
