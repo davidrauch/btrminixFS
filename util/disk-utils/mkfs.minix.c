@@ -325,6 +325,7 @@ static void make_bad_inode_v2_v3 (struct fs_control *ctl)
 	inode->i_nlinks = 1;
 	inode->i_atime = inode->i_mtime = inode->i_ctime = mkfs_minix_time(NULL);
 	inode->i_mode = S_IFREG + 0000;
+	inode->i_real_mode = S_IFREG + 0000;
 	inode->i_size = ctl->fs_bad_blocks * MINIX_BLOCK_SIZE;
 	zone = next (0);
 	for (i = 0; i < 7; i++) {
@@ -404,7 +405,8 @@ static void make_root_inode_v2_v3 (struct fs_control *ctl) {
 		inode->i_size = 2 * ctl->fs_dirsize;
 	}
 
-	inode->i_mode = S_IFDIR + 0755;
+	inode->i_mode = S_IFDIR + 0555;
+	inode->i_real_mode = S_IFDIR + 0755;
 	inode->i_uid = getuid();
 	if (inode->i_uid)
 		inode->i_gid = getgid();

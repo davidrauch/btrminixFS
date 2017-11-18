@@ -23,7 +23,8 @@ struct minix2_inode {
 	uint32_t i_mtime;
 	uint32_t i_ctime;
 	uint32_t i_zone[9];
-	uint32_t magic_stuff; // We'll do something with this
+	uint16_t i_unused;
+	uint16_t i_real_mode;
 };
 
 struct minix_super_block {
