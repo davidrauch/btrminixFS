@@ -8,6 +8,16 @@
 
 #include "minix.h"
 
+// CoW implementation
+static int minix_clone_file_range(struct file *src_file, loff_t off,
+		struct file *dst_file, loff_t destoff, u64 len) {
+	PRINT_FUNC()
+	debug_log("Should copy file %x (inode %x) to file %x (inode %x)", src_file, src_file->f_inode, dst_file, dst_file->f_inode);
+
+	// Fake return message to cause error
+	return -EROFS;
+}
+
 /*
  * We have mostly NULLs here: the current defaults are OK for
  * the minix filesystem.
@@ -19,6 +29,7 @@ const struct file_operations minix_file_operations = {
 	.mmap		= generic_file_mmap,
 	.fsync		= generic_file_fsync,
 	.splice_read	= generic_file_splice_read,
+	.clone_file_range	= minix_clone_file_range,
 };
 
 static int minix_setattr(struct dentry *dentry, struct iattr *attr)
