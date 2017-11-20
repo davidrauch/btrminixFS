@@ -11,11 +11,29 @@
 // CoW implementation
 static int minix_clone_file_range(struct file *src_file, loff_t off,
 		struct file *dst_file, loff_t destoff, u64 len) {
-	PRINT_FUNC()
-	debug_log("Should copy file %x (inode %x) to file %x (inode %x)", src_file, src_file->f_inode, dst_file, dst_file->f_inode);
 
-	// Fake return message to cause error
-	return -EROFS;
+	struct inode *src_inode = src_file->f_inode;
+	struct inode *dst_inode = dst_file->f_inode;
+	struct minix_inode_info *src_minix_inode = minix_i(src_inode);
+	struct minix_inode_info *dst_minix_inode = minix_i(dst_inode);
+	int i;
+
+	PRINT_FUNC()
+	debug_log("Should clone file %x (inode %x) to file %x (inode %x)\n", src_file, src_file->f_inode, dst_file, dst_file->f_inode);
+	//debug_log("Got minix inodes %x and %x\n", src_minix_inode, dst_minix_inode);
+
+	// Simply assign the same blocks
+	// No refcount whatsoever... This WILL break
+	for (i = 0; i < NUM_ZONES_IN_INODE; i++) {
+		dst_minix_inode->u.i2_data[i] = src_minix_inode->u.i2_data[i];
+		//debug_log("\tSetting block %d to %x\n", i, src_minix_inode->u.i2_data[i]);
+	}
+
+	// Set the same size
+	dst_inode->i_size = src_inode->i_size;
+	mark_inode_dirty(dst_inode);
+
+	return 0;
 }
 
 /*

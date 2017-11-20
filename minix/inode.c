@@ -626,6 +626,9 @@ static struct buffer_head * V2_minix_update_inode(struct inode * inode)
 	struct minix_inode_info *minix_inode = minix_i(inode);
 	int i;
 
+	//PRINT_FUNC()
+	//debug_log("\tWorking on inode %x\n", inode);
+
 	raw_inode = minix_V2_raw_inode(inode->i_sb, inode->i_ino, &bh);
 	if (!raw_inode)
 		return NULL;
@@ -644,8 +647,10 @@ static struct buffer_head * V2_minix_update_inode(struct inode * inode)
 	raw_inode->i_ctime = inode->i_ctime.tv_sec;
 	if (S_ISCHR(inode->i_mode) || S_ISBLK(inode->i_mode))
 		raw_inode->i_zone[0] = old_encode_dev(inode->i_rdev);
-	else for (i = 0; i < NUM_ZONES_IN_INODE; i++)
+	else for (i = 0; i < NUM_ZONES_IN_INODE; i++) {
+		//debug_log("\tWriting block %d to %x\n", i, minix_inode->u.i2_data[i]);
 		raw_inode->i_zone[i] = minix_inode->u.i2_data[i];
+	}
 	mark_buffer_dirty(bh);
 	return bh;
 }
