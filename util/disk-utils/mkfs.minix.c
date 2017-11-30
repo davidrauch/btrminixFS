@@ -134,12 +134,14 @@ static uint32_t *refcount_table;
 //#define unmark_zone(x) (clrbit(zone_map,(x)-get_first_zone()+1))
 
 static inline void mark_zone(unsigned int x) {
+	//printf("Setting bit %d\n", x);
 	unsigned int zone_index = x - get_first_zone() + 1;
 	setbit(zone_map,zone_index);
 	refcount_table[zone_index] = 1;
 }
 
 static inline void unmark_zone(unsigned int x) {
+	//printf("Unsetting bit %d\n", x);
 	unsigned int zone_index = x - get_first_zone() + 1;
 	clrbit(zone_map,zone_index);
 	refcount_table[zone_index] = 0;
@@ -191,6 +193,37 @@ static void super_set_state(void)
 	}
 }
 
+static void print_zone_map(void)
+{
+	unsigned long i;
+	unsigned long num_bits = get_nzmaps() * MINIX_BLOCK_SIZE * 8;
+
+	for(i = 0; i < num_bits; i++) {
+		if(i%16 == 0) {
+			printf("\n");
+		}
+
+		printf("%d ", isset(zone_map, i));
+	}
+
+	printf("\n");
+}
+
+static void print_refcount_table(void)
+{
+	unsigned long i;
+
+	for(i = 0; i < Super3.s_zones; i++) {
+		if(i%16 == 0) {
+			printf("\n");
+		}
+
+		printf("%d ", refcount_table[i]);
+	}
+
+	printf("\n");
+}
+
 static void write_tables(const struct fs_control *ctl) {
 	unsigned long imaps = get_nimaps();
 	unsigned long zmaps = get_nzmaps();
@@ -226,14 +259,15 @@ static void write_tables(const struct fs_control *ctl) {
 
 	if (write_all(ctl->device_fd, inode_buffer, buffsz))
 		err(MKFS_EX_ERROR, _("%s: unable to write inodes"), ctl->device_name);
-	
-	printf("zone_map[0]=%d\n", zone_map[0]);
-	printf("refcount_table[0]=%d\n", refcount_table[0]);
-	printf("refcount_table[1]=%d\n", refcount_table[1]);
-	printf("refcount_table[2]=%d\n", refcount_table[0]);
 
 	if (write_all(ctl->device_fd, refcount_table, get_refcount_table_size()))
 		err(MKFS_EX_ERROR, _("%s: unable to write refcount table"), ctl->device_name);
+
+	//printf("\n=== Zone map ===\n");
+	//print_zone_map();
+
+	//printf("\n=== Refcount table ===\n");
+	//print_refcount_table();
 }
 
 static void write_block(const struct fs_control *ctl, int blk, char * buffer) {
@@ -595,7 +629,14 @@ static void setup_tables(const struct fs_control *ctl) {
 	refcount_table = xmalloc(refcount_table_size);
 	memset(refcount_table, 0, refcount_table_size);
 
+	// Manually set counter for zone 0 to 1
+	// Its not possible to mark this zone since it is never used,
+	// but for similarity with the zone bitmap, we keep it marked
+	refcount_table[0] = 1;
+
 	// Unmark all zones
+	// This does not unmark zone 0, as it is never used
+	// This means that zone 0 will stay marked from the previous memset()
 	for (i = get_first_zone() ; i<zones ; i++)
 		unmark_zone(i);
 	for (i = MINIX_ROOT_INO ; i<=inodes; i++)
