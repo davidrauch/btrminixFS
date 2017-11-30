@@ -83,6 +83,7 @@
 
 #define MINIX_ROOT_INO 1
 #define MINIX_BAD_INO 2
+#define MINIX_REFCOUNT_INO 3
 
 #define TEST_BUFFER_BLOCKS 16
 #define MAX_GOOD_BLOCKS 512
@@ -122,14 +123,27 @@ static unsigned short good_blocks_table[MAX_GOOD_BLOCKS];
 
 static char *inode_map;
 static char *zone_map;
+static uint32_t *refcount_table;
 
 #define zone_in_use(x) (isset(zone_map,(x)-get_first_zone()+1) != 0)
 
 #define mark_inode(x) (setbit(inode_map,(x)))
 #define unmark_inode(x) (clrbit(inode_map,(x)))
 
-#define mark_zone(x) (setbit(zone_map,(x)-get_first_zone()+1))
-#define unmark_zone(x) (clrbit(zone_map,(x)-get_first_zone()+1))
+//#define mark_zone(x) (setbit(zone_map,(x)-get_first_zone()+1))
+//#define unmark_zone(x) (clrbit(zone_map,(x)-get_first_zone()+1))
+
+static inline void mark_zone(unsigned int x) {
+	unsigned int zone_index = x - get_first_zone() + 1;
+	setbit(zone_map,zone_index);
+	refcount_table[zone_index] = 1;
+}
+
+static inline void unmark_zone(unsigned int x) {
+	unsigned int zone_index = x - get_first_zone() + 1;
+	clrbit(zone_map,zone_index);
+	refcount_table[zone_index] = 0;
+}
 
 static void __attribute__((__noreturn__)) usage(void)
 {
@@ -212,6 +226,14 @@ static void write_tables(const struct fs_control *ctl) {
 
 	if (write_all(ctl->device_fd, inode_buffer, buffsz))
 		err(MKFS_EX_ERROR, _("%s: unable to write inodes"), ctl->device_name);
+	
+	printf("zone_map[0]=%d\n", zone_map[0]);
+	printf("refcount_table[0]=%d\n", refcount_table[0]);
+	printf("refcount_table[1]=%d\n", refcount_table[1]);
+	printf("refcount_table[2]=%d\n", refcount_table[0]);
+
+	if (write_all(ctl->device_fd, refcount_table, get_refcount_table_size()))
+		err(MKFS_EX_ERROR, _("%s: unable to write refcount table"), ctl->device_name);
 }
 
 static void write_block(const struct fs_control *ctl, int blk, char * buffer) {
@@ -504,7 +526,7 @@ static void super_set_magic(const struct fs_control *ctl)
 }
 
 static void setup_tables(const struct fs_control *ctl) {
-	unsigned long inodes, zmaps, imaps, zones, i;
+	unsigned long inodes, zmaps, imaps, zones, i, refcount_table_size;
 
 	super_block_buffer = xcalloc(1, MINIX_SUPERBLOCK_SIZE);
 
@@ -565,6 +587,15 @@ static void setup_tables(const struct fs_control *ctl) {
 	memset(inode_map,0xff,imaps * MINIX_BLOCK_SIZE);
 	memset(zone_map,0xff,zmaps * MINIX_BLOCK_SIZE);
 
+	// Set up refcount table
+	// Calculate size
+	refcount_table_size = get_refcount_table_size();
+
+	// Assign data blocks for refcount table
+	refcount_table = xmalloc(refcount_table_size);
+	memset(refcount_table, 0, refcount_table_size);
+
+	// Unmark all zones
 	for (i = get_first_zone() ; i<zones ; i++)
 		unmark_zone(i);
 	for (i = MINIX_ROOT_INO ; i<=inodes; i++)

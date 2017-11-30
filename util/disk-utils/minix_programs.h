@@ -105,9 +105,19 @@ static inline unsigned long inode_blocks(void)
 	}
 }
 
+static inline size_t get_refcount_table_size(void)
+{
+	return Super3.s_zones * sizeof(uint32_t);
+}
+
+static inline size_t get_refcount_table_blocks(void)
+{
+	return UPPER(get_refcount_table_size(), MINIX_BLOCK_SIZE);
+}
+
 static inline off_t first_zone_data(void)
 {
-	return 2 + get_nimaps() + get_nzmaps() + inode_blocks();
+	return 2 + get_nimaps() + get_nzmaps() + inode_blocks() + get_refcount_table_blocks();
 }
 
 static inline size_t get_inode_buffer_size(void)
