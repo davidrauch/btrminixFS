@@ -21,7 +21,7 @@ static DEFINE_SPINLOCK(bitmap_lock);
 /**
  * Get the refcount of a particular data block
  */
-static inline uint32_t get_refcount(struct minix_sb_info *sbi, size_t data_block_index) {
+inline uint32_t get_refcount(struct minix_sb_info *sbi, size_t data_block_index) {
 	// This could be easier by simply casting sbi->s_refcount_table[0] to uint32_t*
 	// And indexing it with data_block_index, but that's kind of dirty
 	// since we'd be reading over the actual size of the buffer_head.
@@ -42,7 +42,7 @@ static inline uint32_t get_refcount(struct minix_sb_info *sbi, size_t data_block
 /**
  * Set the refcount of a particular data block
  */
-static inline void set_refcount(struct minix_sb_info *sbi, size_t data_block_index, uint32_t value) {
+inline void set_refcount(struct minix_sb_info *sbi, size_t data_block_index, uint32_t value) {
 	// Get index of block and index within block
 	size_t block_size = sbi->s_refcount_table[0]->b_size;
 	uint32_t refcounts_per_block = block_size / sizeof(uint32_t);
@@ -62,7 +62,7 @@ static inline void set_refcount(struct minix_sb_info *sbi, size_t data_block_ind
  * Increments the refcount of a particular data block
  * Returns the new refcount
  */
-static inline uint32_t increment_refcount(struct minix_sb_info *sbi, size_t data_block_index) {
+inline uint32_t increment_refcount(struct minix_sb_info *sbi, size_t data_block_index) {
 	uint32_t refcount = get_refcount(sbi, data_block_index);
 	if (refcount+1 != 0) {
 		set_refcount(sbi, data_block_index, refcount+1);
@@ -76,7 +76,7 @@ static inline uint32_t increment_refcount(struct minix_sb_info *sbi, size_t data
  * Decrements the refcount of a particular data block
  * Returns the new refcount
  */
-static inline uint32_t decrement_refcount(struct minix_sb_info *sbi, size_t data_block_index) {
+inline uint32_t decrement_refcount(struct minix_sb_info *sbi, size_t data_block_index) {
 	uint32_t refcount = get_refcount(sbi, data_block_index);
 	if (refcount != 0) {
 		set_refcount(sbi, data_block_index, refcount-1);
@@ -84,6 +84,13 @@ static inline uint32_t decrement_refcount(struct minix_sb_info *sbi, size_t data
 		debug_log("ERROR: Underflow in refcount for data block %d\n", data_block_index);
 	}
 	return get_refcount(sbi, data_block_index);
+}
+
+/**
+ * Transforms a zone number into a data zone index
+ */
+inline uint32_t data_zone_index_for_zone_number(struct minix_sb_info *sbi, size_t zone_number) {
+	return zone_number - sbi->s_firstdatazone + 1;
 }
 
 /*
@@ -122,7 +129,7 @@ void minix_free_block(struct inode *inode, unsigned long block)
 		printk("Trying to free block not in datazone\n");
 		return;
 	}
-	zone = block - sbi->s_firstdatazone + 1;
+	zone = data_zone_index_for_zone_number(sbi, block);
 	refcount_table_index = zone;
 	bit = zone & ((1<<k) - 1);
 	zone >>= k;

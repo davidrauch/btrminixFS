@@ -75,6 +75,12 @@ extern void minix_set_link(struct minix_dir_entry*, struct page*, struct inode*)
 extern struct minix_dir_entry *minix_dotdot(struct inode*, struct page**);
 extern ino_t minix_inode_by_name(struct dentry*);
 
+extern inline uint32_t get_refcount(struct minix_sb_info *, size_t);
+extern inline void set_refcount(struct minix_sb_info *, size_t, uint32_t);
+extern inline uint32_t increment_refcount(struct minix_sb_info *, size_t);
+extern inline uint32_t decrement_refcount(struct minix_sb_info *, size_t);
+extern inline uint32_t data_zone_index_for_zone_number(struct minix_sb_info *, size_t);
+
 extern const struct inode_operations minix_file_inode_operations;
 extern const struct inode_operations minix_dir_inode_operations;
 extern const struct file_operations minix_file_operations;
