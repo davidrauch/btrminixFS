@@ -250,6 +250,8 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
 		sbi->s_namelen = 60;
 		sbi->s_version = MINIX_V3;
 		sbi->s_mount_state = MINIX_VALID_FS;
+		sbi->s_inodes_blocks = m3s->s_inodes_blocks;
+		sbi->s_refcount_table_blocks = m3s->s_refcount_table_blocks;
 		debug_log("- blocksize is %d\n", m3s->s_blocksize);
 		sb_set_blocksize(s, m3s->s_blocksize);
 		s->s_max_links = MINIX2_LINK_MAX;
@@ -304,6 +306,36 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
 				"zmap blocks allocated.  Refusing to mount.\n");
 		goto out_no_bitmap;
 	}
+
+	/*
+	 * Allocate and read the refcount table
+	 * This is very similar to reading the inode and zone map,
+	 * except we have to skip over the inodes that come before
+	 * the refcount table on disk
+	 */
+	if (sbi->s_refcount_table_blocks == 0) {
+		goto out_illegal_sb;
+	}
+
+	// Allocate memory
+	i = sbi->s_refcount_table_blocks * sizeof(bh);
+	map = kzalloc(i, GFP_KERNEL);
+	if (!map)
+		goto out_no_map;
+
+	// Set up buffer_head
+	sbi->s_refcount_table = &map[0];
+
+	// Read content
+	block = 2 + sbi->s_imap_blocks + sbi->s_zmap_blocks + sbi->s_inodes_blocks;
+	for (i=0 ; i < sbi->s_refcount_table_blocks ; i++) {
+		if (!(sbi->s_refcount_table[i]=sb_bread(s, block)))
+			goto out_no_bitmap;
+		block++;
+	}
+
+	// Minix clears the 0 bit on zone and inode map, so we also clear the refcount
+	*((uint32_t*)sbi->s_refcount_table[0]->b_data) = 0;
 
 	/* set up enough so that it can read an inode */
 	s->s_op = &minix_sops;

@@ -40,6 +40,9 @@ struct minix_sb_info {
 	struct minix_super_block * s_ms;
 	unsigned short s_mount_state;
 	unsigned short s_version;
+	__u32 s_inodes_blocks;
+	__u32 s_refcount_table_blocks;
+	struct buffer_head ** s_refcount_table;
 };
 
 extern struct inode *minix_iget(struct super_block *, unsigned long);

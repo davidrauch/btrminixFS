@@ -537,6 +537,8 @@ static void super_set_map_blocks(const struct fs_control *ctl, unsigned long ino
 		Super3.s_zmap_blocks = UPPER(ctl->fs_blocks - (1 + get_nimaps() + inode_blocks()),
 					     BITS_PER_BLOCK + 1);
 		Super3.s_firstdatazone = first_zone_data();
+		Super3.s_inodes_blocks = UPPER(inodes * sizeof(struct minix2_inode), MINIX_BLOCK_SIZE);
+		Super3.s_refcount_table_blocks = get_refcount_table_blocks();
 		break;
 	default:
 		Super.s_imap_blocks = UPPER(inodes + 1, BITS_PER_BLOCK);

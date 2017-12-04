@@ -55,6 +55,9 @@ struct minix3_super_block {
 	uint16_t s_pad2;
 	uint16_t s_blocksize;
 	uint8_t  s_disk_version;
+	uint8_t s_pad3; // Pad the disk version to 16 bits. We could put a magic number here if we needed
+	uint32_t s_inodes_blocks;
+	uint32_t s_refcount_table_blocks;
 };
 
 /*

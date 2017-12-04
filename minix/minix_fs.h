@@ -97,6 +97,9 @@ struct minix3_super_block {
 	__u16 s_pad2;
 	__u16 s_blocksize;
 	__u8  s_disk_version;
+	__u8  s_pad3;
+	__u32 s_inodes_blocks;
+	__u32 s_refcount_table_blocks;
 };
 
 struct minix_dir_entry {
