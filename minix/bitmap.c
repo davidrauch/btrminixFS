@@ -19,24 +19,71 @@
 static DEFINE_SPINLOCK(bitmap_lock);
 
 /**
- * Gets the refcount table as an array of uint32_t
- * This way the data block number can be used as an index
+ * Get the refcount of a particular data block
  */
-static uint32_t* get_refcount_table(struct minix_sb_info *sbi) {
-	return (uint32_t*)sbi->s_refcount_table[0]->b_data;
-}
+static inline uint32_t get_refcount(struct minix_sb_info *sbi, size_t data_block_index) {
+	// This could be easier by simply casting sbi->s_refcount_table[0] to uint32_t*
+	// And indexing it with data_block_index, but that's kind of dirty
+	// since we'd be reading over the actual size of the buffer_head.
+	// So we do the same procedure as in set_refcount...
 
-/**
- * Marks the part of the refcount table that contains the refcount for the
- * specifiec data block dirty
- */
-static void mark_part_of_refcount_table_dirty(struct minix_sb_info *sbi, size_t data_block_index) {
+	// Get index of block and index within block
 	size_t block_size = sbi->s_refcount_table[0]->b_size;
 	uint32_t refcounts_per_block = block_size / sizeof(uint32_t);
 	size_t block_index = data_block_index / refcounts_per_block;
+	size_t entry_index = data_block_index % refcounts_per_block;
 
+	// Get refcounter
 	struct buffer_head *refcount_table_block = sbi->s_refcount_table[block_index];
+	uint32_t *refcount_table_section = (uint32_t*)refcount_table_block->b_data;
+	return refcount_table_section[entry_index]; 
+}
+
+/**
+ * Set the refcount of a particular data block
+ */
+static inline void set_refcount(struct minix_sb_info *sbi, size_t data_block_index, uint32_t value) {
+	// Get index of block and index within block
+	size_t block_size = sbi->s_refcount_table[0]->b_size;
+	uint32_t refcounts_per_block = block_size / sizeof(uint32_t);
+	size_t block_index = data_block_index / refcounts_per_block;
+	size_t entry_index = data_block_index % refcounts_per_block;
+
+	// Set refcounter
+	struct buffer_head *refcount_table_block = sbi->s_refcount_table[block_index];
+	uint32_t *refcount_table_section = (uint32_t*)refcount_table_block->b_data;
+	refcount_table_section[entry_index] = value;
 	mark_buffer_dirty(refcount_table_block);
+
+	debug_log("Set refcount of data block %d to %d\n", data_block_index, refcount_table_section[entry_index]);
+}
+
+/**
+ * Increments the refcount of a particular data block
+ * Returns the new refcount
+ */
+static inline uint32_t increment_refcount(struct minix_sb_info *sbi, size_t data_block_index) {
+	uint32_t refcount = get_refcount(sbi, data_block_index);
+	if (refcount+1 != 0) {
+		set_refcount(sbi, data_block_index, refcount+1);
+	} else {
+		debug_log("ERROR: Overflow in refcount for data block %d\n", data_block_index);
+	}
+	return get_refcount(sbi, data_block_index);
+}
+
+/**
+ * Decrements the refcount of a particular data block
+ * Returns the new refcount
+ */
+static inline uint32_t decrement_refcount(struct minix_sb_info *sbi, size_t data_block_index) {
+	uint32_t refcount = get_refcount(sbi, data_block_index);
+	if (refcount != 0) {
+		set_refcount(sbi, data_block_index, refcount-1);
+	} else {
+		debug_log("ERROR: Underflow in refcount for data block %d\n", data_block_index);
+	}
+	return get_refcount(sbi, data_block_index);
 }
 
 /*
@@ -68,7 +115,6 @@ void minix_free_block(struct inode *inode, unsigned long block)
 	struct minix_sb_info *sbi = minix_sb(sb);
 	struct buffer_head *bh;
 	int k = sb->s_blocksize_bits + 3;
-	uint32_t *refcount_table = get_refcount_table(sbi);
 	uint32_t refcount_table_index;
 	unsigned long bit, zone;
 
@@ -89,12 +135,8 @@ void minix_free_block(struct inode *inode, unsigned long block)
 	spin_lock(&bitmap_lock);
 
 	// Decrement refcount
-	refcount_table[refcount_table_index] -= 1;
-	mark_part_of_refcount_table_dirty(sbi, refcount_table_index);
-	debug_log("Decremented refcount on data block %d, is now %d\n", refcount_table_index, refcount_table[refcount_table_index]);
-
 	// If refcount is 0, free block in bitmap
-	if (refcount_table[refcount_table_index] == 0) {
+	if (decrement_refcount(sbi, refcount_table_index) == 0) {
 		debug_log("Freeing data block %d\n", refcount_table_index);
 		if (!minix_test_and_clear_bit(bit, bh->b_data))
 			printk("minix_free_block (%s:%lu): bit already cleared\n",
@@ -119,11 +161,9 @@ int minix_new_block(struct inode * inode)
 		j = minix_find_first_zero_bit(bh->b_data, bits_per_zone);
 		if (j < bits_per_zone) {
 			// Set refcount to 1
-			uint32_t *refcount_table = get_refcount_table(sbi);
 			size_t refcount_table_index = i * bits_per_zone + j;
-			refcount_table[refcount_table_index] = 1;
-			mark_part_of_refcount_table_dirty(sbi, refcount_table_index);
-			debug_log("Set block %d to %d\n", refcount_table_index, refcount_table[refcount_table_index]);
+			set_refcount(sbi, refcount_table_index, 1);
+
 			// Set zone used in bitmap
 			minix_set_bit(j, bh->b_data);
 			spin_unlock(&bitmap_lock);
