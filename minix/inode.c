@@ -478,6 +478,9 @@ static int minix_write_begin(struct file *file, struct address_space *mapping,
 	size_t first_inode_block_index;
 	size_t last_inode_block_index;
 
+	size_t n_blockrefs_in_inode = NUM_ZONES_IN_INODE - 2;
+	size_t n_blockrefs_in_block = sb->s_blocksize / sizeof(uint32_t);
+
 	PRINT_FUNC();
 	debug_log("- file: %x\n", file);
 	debug_log("  - inode: %x\n", file->f_inode);
@@ -503,32 +506,39 @@ static int minix_write_begin(struct file *file, struct address_space *mapping,
 
 	// TODO: This currently only works for the first 7 blocks (directly referenced)
 	for (i = first_inode_block_index; i <= last_inode_block_index; i++) {
-		uint32_t data_zone_index;
-		int new_block;
+		// Directly referenced blocks
+		if (i < n_blockrefs_in_inode) {
+			uint32_t data_zone_index;
+			int new_block;
 
-		// Check if block is not yet allocated
-		// All following blocks will also be unallocated
-		if(minix_inode->u.i2_data[i] == 0) {
-			break;
-		}
-
-		// Check refcount of this data block
-		// Inode contains physical block number!
-		data_zone_index = data_zone_index_for_zone_number(sbi, minix_inode->u.i2_data[i]);
-		if(get_refcount(sbi, data_zone_index) > 1) {
-			// Assign new block
-			new_block = minix_new_block(inode);
-			if (new_block != 0) {
-				// Decrement refcount on old block
-				decrement_refcount(sbi, data_zone_index);
-
-				// Set new block
-				minix_inode->u.i2_data[i] = new_block;
-			} else {
-				debug_log("ERROR: Could not get new block for CoW");
+			// Check if block is not yet allocated
+			// All following blocks will also be unallocated
+			if(minix_inode->u.i2_data[i] == 0) {
+				break;
 			}
-		}
 
+			// Check refcount of this data block
+			// Inode contains physical block number!
+			data_zone_index = data_zone_index_for_zone_number(sbi, minix_inode->u.i2_data[i]);
+			if(get_refcount(sbi, data_zone_index) > 1) {
+				// Assign new block
+				new_block = minix_new_block(inode);
+				if (new_block != 0) {
+					// Decrement refcount on old block
+					decrement_refcount(sbi, data_zone_index);
+
+					// Set new block
+					minix_inode->u.i2_data[i] = new_block;
+				} else {
+					debug_log("ERROR: Could not get new block for CoW");
+				}
+			}
+		} else if (i < n_blockrefs_in_inode + n_blockrefs_in_block) {
+			// Single indirectly referenced blocks
+
+		} else {
+			// Double indirectly referenced blocks
+		}
 	}
 
 

@@ -80,6 +80,7 @@ extern inline void set_refcount(struct minix_sb_info *, size_t, uint32_t);
 extern inline uint32_t increment_refcount(struct minix_sb_info *, size_t);
 extern inline uint32_t decrement_refcount(struct minix_sb_info *, size_t);
 extern inline uint32_t data_zone_index_for_zone_number(struct minix_sb_info *, size_t);
+extern void increment_refcounts_on_indirect_block(struct super_block *, uint32_t);
 
 extern const struct inode_operations minix_file_inode_operations;
 extern const struct inode_operations minix_dir_inode_operations;

@@ -94,6 +94,34 @@ inline uint32_t data_zone_index_for_zone_number(struct minix_sb_info *sbi, size_
 }
 
 /*
+ * Increments the refcounts of an indirect block and all referenced data blocks
+ */
+void increment_refcounts_on_indirect_block(struct super_block *sb, uint32_t physical_block_number) {
+	size_t data_zone_index;
+	uint32_t *indirect_block;
+	struct minix_sb_info *sbi = minix_sb(sb);
+	size_t n_blockrefs_in_block = sb->s_blocksize / sizeof(uint32_t);
+	struct buffer_head *bh;
+	size_t i;
+
+	// Increase refcount on indirect block
+	data_zone_index = data_zone_index_for_zone_number(sbi, physical_block_number);
+	increment_refcount(sbi, data_zone_index);
+
+	// Increase refcount on all data blocks
+	bh = sb_bread(sb, physical_block_number);
+	indirect_block = (uint32_t*) bh->b_data;
+
+	for (i = 0; i < n_blockrefs_in_block; i++) {
+		if (indirect_block[i] != 0) {
+			// Increase refcount on data block
+			data_zone_index = data_zone_index_for_zone_number(sbi, indirect_block[i]);
+			increment_refcount(sbi, data_zone_index);
+		}
+	}
+}
+
+/*
  * bitmap consists of blocks filled with 16bit words
  * bit set == busy, bit clear == free
  * endianness is a mess, but for counting zero bits it really doesn't matter...
