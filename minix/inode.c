@@ -470,12 +470,67 @@ static int minix_write_begin(struct file *file, struct address_space *mapping,
 			struct page **pagep, void **fsdata)
 {
 	int ret;
+	size_t i;
+	struct inode *inode = file->f_inode;
+	struct minix_inode_info *minix_inode = minix_i(inode);
+	struct super_block *sb = inode->i_sb;
+	struct minix_sb_info *sbi = minix_sb(sb);
+	size_t first_inode_block_index;
+	size_t last_inode_block_index;
 
 	PRINT_FUNC();
 	debug_log("- file: %x\n", file);
 	debug_log("  - inode: %x\n", file->f_inode);
 	debug_log("- pos: %d\n", pos);
 	debug_log("- len: %d\n", len);
+
+	// TEST: Can we change the inode here?
+	//minix_inode->u.i2_data[0] += 10;
+	//mark_inode_dirty(inode);
+	// We can change the inode here!
+	// - Check which blocks would be written to
+	// 		- Only relevant: block that are already referenced
+	//		  new blocks will be allocated automatically in block_write_begin()
+	// - Check which of these blocks have refcount > 1
+	// - For those blocks: Allocate new blocks, change references in inode
+	//		- Since the page cache always flushes full pages, we don't have to manually copy the old contents
+	//		- This relies on page size >= block size, but other parts of the driver also assume this
+
+	// Check which blocks would be written to
+	// TODO: Also handle indirect data blocks
+	first_inode_block_index = pos / sb->s_blocksize;
+	last_inode_block_index = (pos + len -1) / sb->s_blocksize;
+
+	// TODO: This currently only works for the first 7 blocks (directly referenced)
+	for (i = first_inode_block_index; i <= last_inode_block_index; i++) {
+		uint32_t data_zone_index;
+		int new_block;
+
+		// Check if block is not yet allocated
+		// All following blocks will also be unallocated
+		if(minix_inode->u.i2_data[i] == 0) {
+			break;
+		}
+
+		// Check refcount of this data block
+		// Inode contains physical block number!
+		data_zone_index = data_zone_index_for_zone_number(sbi, minix_inode->u.i2_data[i]);
+		if(get_refcount(sbi, data_zone_index) > 1) {
+			// Assign new block
+			new_block = minix_new_block(inode);
+			if (new_block != 0) {
+				// Decrement refcount on old block
+				decrement_refcount(sbi, data_zone_index);
+
+				// Set new block
+				minix_inode->u.i2_data[i] = new_block;
+			} else {
+				debug_log("ERROR: Could not get new block for CoW");
+			}
+		}
+
+	}
+
 
 	ret = block_write_begin(mapping, pos, len, flags, pagep,
 				minix_get_block);
