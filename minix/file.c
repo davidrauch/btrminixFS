@@ -14,6 +14,9 @@
 static int minix_clone_file_range(struct file *src_file, loff_t off,
 		struct file *dst_file, loff_t destoff, u64 len) {
 
+	// Only src_file and dst_file are useful
+	// off, destoff and len are always 0 when called from ioctl (e.g. during cp)
+
 	struct inode *src_inode = src_file->f_inode;
 	struct inode *dst_inode = dst_file->f_inode;
 	struct minix_inode_info *src_minix_inode = minix_i(src_inode);
@@ -25,15 +28,20 @@ static int minix_clone_file_range(struct file *src_file, loff_t off,
 	struct minix_sb_info *sbi = minix_sb(sb);
 
 	PRINT_FUNC()
-	debug_log("Should clone file %x (inode %x) to file %x (inode %x)\n", src_file, src_file->f_inode, dst_file, dst_file->f_inode);
-	//debug_log("Got minix inodes %x and %x\n", src_minix_inode, dst_minix_inode);
+	debug_log("\tShould clone file %x (inode %x) to file %x (inode %x)\n", src_file, src_file->f_inode, dst_file, dst_file->f_inode);
+
+	// Make sure all modifications of the src_file have been written to disk
+	// The content of dst_file will be read from disk after cloning,
+	// and if there are unsaved changes it will read 'old' data
+	// This is synchronous and maybe there is a better way to prevent this problem, but this works for now
+	write_inode_now(src_inode, 1);
 
 	// Direct blocks: assign to target and increase refcount on blocks
 	for (i = 0; i < INDIRECT_BLOCK_INDEX; i++) {
 		if (src_minix_inode->u.i2_data[i] != 0) {
 			// Assign the zone number
 			dst_minix_inode->u.i2_data[i] = src_minix_inode->u.i2_data[i];
-			debug_log("\tSetting block %d to %d\n", i, src_minix_inode->u.i2_data[i]);
+			debug_log("\tSetting block %d to %d\n", i, data_zone_index_for_zone_number(sbi, dst_minix_inode->u.i2_data[i]));
 			
 			// Increase refcount on data block
 			data_zone_index = data_zone_index_for_zone_number(sbi, dst_minix_inode->u.i2_data[i]);
@@ -45,6 +53,7 @@ static int minix_clone_file_range(struct file *src_file, loff_t off,
 	if (src_minix_inode->u.i2_data[INDIRECT_BLOCK_INDEX] != 0) {
 		// Assign indirect block
 		dst_minix_inode->u.i2_data[INDIRECT_BLOCK_INDEX] = src_minix_inode->u.i2_data[INDIRECT_BLOCK_INDEX];
+		debug_log("\tSetting block %d to %d\n", i, data_zone_index_for_zone_number(sbi, dst_minix_inode->u.i2_data[INDIRECT_BLOCK_INDEX]));
 
 		// Increase refcount on indirect block
 		increment_refcounts_on_indirect_block(sb, dst_minix_inode->u.i2_data[INDIRECT_BLOCK_INDEX]);
@@ -77,8 +86,10 @@ static int minix_clone_file_range(struct file *src_file, loff_t off,
 		}
 	}
 
-	// Set the same size
-	dst_inode->i_size = src_inode->i_size;
+	// Set proper size and truncate all currently cached pages of the destination inode
+	// so that the next read will read the new data
+	truncate_setsize(dst_inode, src_inode->i_size);
+	truncate_inode_pages_range(&dst_inode->i_data, 0, PAGE_ALIGN(dst_inode->i_size));
 	mark_inode_dirty(dst_inode);
 
 	return 0;

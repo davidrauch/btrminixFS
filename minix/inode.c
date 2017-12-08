@@ -441,12 +441,15 @@ static int minix_get_block(struct inode *inode, sector_t block,
 static int minix_writepage(struct page *page, struct writeback_control *wbc)
 {
 	PRINT_FUNC();
+	debug_log("\tpage = %x\n", page);
+
 	return block_write_full_page(page, minix_get_block, wbc);
 }
 
 static int minix_readpage(struct file *file, struct page *page)
 {
 	PRINT_FUNC();
+	debug_log("\tinode = %x, page = %x\n", file != 0 ? file->f_inode : 0, page);
 	return block_read_full_page(page,minix_get_block);
 }
 
@@ -486,11 +489,10 @@ static int minix_write_begin(struct file *file, struct address_space *mapping,
 	debug_log("  - inode: %x\n", file->f_inode);
 	debug_log("- pos: %d\n", pos);
 	debug_log("- len: %d\n", len);
+	debug_log("- page: %x\n", *pagep);
 
-	// TEST: Can we change the inode here?
-	//minix_inode->u.i2_data[0] += 10;
-	//mark_inode_dirty(inode);
-	// We can change the inode here!
+	
+	// We can change the target inode here!
 	// - Check which blocks would be written to
 	// 		- Only relevant: block that are already referenced
 	//		  new blocks will be allocated automatically in block_write_begin()
@@ -552,6 +554,8 @@ static int minix_write_begin(struct file *file, struct address_space *mapping,
 
 static sector_t minix_bmap(struct address_space *mapping, sector_t block)
 {
+	PRINT_FUNC();
+	
 	return generic_block_bmap(mapping,block,minix_get_block);
 }
 
@@ -638,6 +642,8 @@ static struct inode *V2_minix_iget(struct inode *inode)
 	struct minix2_inode * raw_inode;
 	struct minix_inode_info *minix_inode = minix_i(inode);
 	int i;
+
+	PRINT_FUNC();
 
 	raw_inode = minix_V2_raw_inode(inode->i_sb, inode->i_ino, &bh);
 	if (!raw_inode) {
@@ -758,6 +764,7 @@ static int minix_write_inode(struct inode *inode, struct writeback_control *wbc)
 	struct buffer_head *bh;
 
 	PRINT_FUNC();
+	debug_log("\tFor inode %x", inode);
 
 	if (INODE_VERSION(inode) == MINIX_V1)
 		bh = V1_minix_update_inode(inode);
