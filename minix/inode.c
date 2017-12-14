@@ -484,6 +484,9 @@ static int minix_write_begin(struct file *file, struct address_space *mapping,
 	size_t n_blockrefs_in_inode = NUM_ZONES_IN_INODE - 2;
 	size_t n_blockrefs_in_block = sb->s_blocksize / sizeof(uint32_t);
 
+	int new_block;
+	uint32_t data_zone_index;
+
 	PRINT_FUNC();
 	debug_log("- file: %x\n", file);
 	debug_log("  - inode: %x\n", file->f_inode);
@@ -510,9 +513,6 @@ static int minix_write_begin(struct file *file, struct address_space *mapping,
 	for (i = first_inode_block_index; i <= last_inode_block_index; i++) {
 		// Directly referenced blocks
 		if (i < n_blockrefs_in_inode) {
-			uint32_t data_zone_index;
-			int new_block;
-
 			// Check if block is not yet allocated
 			// All following blocks will also be unallocated
 			if(minix_inode->u.i2_data[i] == 0) {
@@ -537,6 +537,53 @@ static int minix_write_begin(struct file *file, struct address_space *mapping,
 			}
 		} else if (i < n_blockrefs_in_inode + n_blockrefs_in_block) {
 			// Single indirectly referenced blocks
+			
+			// If we don't reference an indirect block yet, we can just ignore it
+			if (minix_inode->u.i2_data[INDIRECT_BLOCK_INDEX] == 0) {
+				break;
+			}
+
+			// Copy the indirect block if needed
+			data_zone_index = data_zone_index_for_zone_number(sbi, minix_inode->u.i2_data[INDIRECT_BLOCK_INDEX]);
+			if(get_refcount(sbi, data_zone_index) > 1) {
+				// Assign new block
+				new_block = minix_new_block(inode);
+				if (new_block != 0) {
+					struct buffer_head *old_indirect_block_bh;
+					struct buffer_head *new_indirect_block_bh;
+
+					// Copy content to new indirect block
+					// Read block content
+					if (!(old_indirect_block_bh = sb_bread(sb, minix_inode->u.i2_data[INDIRECT_BLOCK_INDEX]))) {
+						debug_log("ERROR: Could not read old indirect block");
+					}
+
+					// Read target block
+					if (!(new_indirect_block_bh = sb_bread(sb, new_block))) {
+						debug_log("ERROR: Could not read new indirect block");
+					}
+
+					// Copy
+					memcpy(new_indirect_block_bh->b_data, old_indirect_block_bh->b_data, new_indirect_block_bh->b_size);
+					mark_buffer_dirty(new_indirect_block_bh);
+					sync_dirty_buffer(new_indirect_block_bh);
+
+					// Decrement refcount on old block
+					decrement_refcount(sbi, data_zone_index);
+
+					// Set new block
+					minix_inode->u.i2_data[INDIRECT_BLOCK_INDEX] = new_block;
+
+
+
+
+
+
+				} else {
+					debug_log("ERROR: Could not get new block for CoW");
+				}
+			}
+
 
 		} else {
 			// Double indirectly referenced blocks
@@ -544,6 +591,8 @@ static int minix_write_begin(struct file *file, struct address_space *mapping,
 	}
 
 
+	// block_write_begin will allocate new blocks and rewrite indirect blocks if needed
+	// We have to prepare the inode so that all these operations are done on blocks with refcount == 1
 	ret = block_write_begin(mapping, pos, len, flags, pagep,
 				minix_get_block);
 	if (unlikely(ret))
