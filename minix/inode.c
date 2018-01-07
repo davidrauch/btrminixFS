@@ -537,6 +537,9 @@ static int minix_write_begin(struct file *file, struct address_space *mapping,
 			}
 		} else if (i < n_blockrefs_in_inode + n_blockrefs_in_block) {
 			// Single indirectly referenced blocks
+			size_t indirect_i = i - n_blockrefs_in_inode;
+			struct buffer_head *indirect_block_bh;
+			uint32_t physical_block_index;
 			
 			// If we don't reference an indirect block yet, we can just ignore it
 			if (minix_inode->u.i2_data[INDIRECT_BLOCK_INDEX] == 0) {
@@ -574,16 +577,41 @@ static int minix_write_begin(struct file *file, struct address_space *mapping,
 					// Set new block
 					minix_inode->u.i2_data[INDIRECT_BLOCK_INDEX] = new_block;
 
-
-
-
-
-
 				} else {
 					debug_log("ERROR: Could not get new block for CoW");
 				}
 			}
 
+			// Copy the actual data blocks if needed
+			// Read indirect block
+			if (!(indirect_block_bh = sb_bread(sb, minix_inode->u.i2_data[INDIRECT_BLOCK_INDEX]))) {
+				debug_log("ERROR: Could not read indirect block");
+			}
+
+			physical_block_index = ((uint32_t*)indirect_block_bh->b_data)[indirect_i];
+
+			if (physical_block_index == 0) {
+				break;
+			}
+
+			// Check refcount
+			data_zone_index = data_zone_index_for_zone_number(sbi, physical_block_index);
+			if(get_refcount(sbi, data_zone_index) > 1) {
+				// Assign new block
+				new_block = minix_new_block(inode);
+				if (new_block == 0) {
+					debug_log("ERROR: Could not get new block for CoW");
+					break;
+				}
+				
+				// Decrement refcount on old block
+				decrement_refcount(sbi, data_zone_index);
+
+				// Set new block
+				((uint32_t*)indirect_block_bh->b_data)[indirect_i] = new_block;
+				mark_buffer_dirty(indirect_block_bh);
+				sync_dirty_buffer(indirect_block_bh);
+			}
 
 		} else {
 			// Double indirectly referenced blocks
