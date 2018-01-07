@@ -47,7 +47,7 @@ void create_snapshot(std::string volume_path, std::string snapshot_name) {
         auto target_filename = snapshot_dir + filepath.filename().string();
 
         std::ostringstream cmd;
-        cmd << "cp --reflink -r \"" << filepath << "\" \"" << target_filename << "\"";
+        cmd << "cp --reflink=always --preserve=all -r \"" << filepath << "\" \"" << target_filename << "\"";
  
         system(cmd.str().c_str());
     }
@@ -103,7 +103,7 @@ void rollback_snapshot(std::string volume_path, std::string snapshot_name) {
         auto target_filename = volume_path + filepath.filename().string();
 
         std::ostringstream cmd;
-        cmd << "cp --reflink -r \"" << filepath << "\" \"" << target_filename << "\"";
+        cmd << "cp --reflink=always --preserve=all -r \"" << filepath << "\" \"" << target_filename << "\"";
  
         system(cmd.str().c_str());
     }
