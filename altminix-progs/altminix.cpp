@@ -4,11 +4,18 @@
 #include <set>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 #include <experimental/filesystem>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <errno.h>
 
 #include "snapshots.h"
 #include "errors.h"
 #include "utils.h"
+
+#include "../minix/ioctl_basic.h"
 
 namespace stdfs = std::experimental::filesystem;
 
@@ -48,6 +55,21 @@ void validate_args(int argc, char * argv[]) {
 }
 
 int main(int argc, char * argv[]) {
+    // Test ioctl
+    int fd = open("/tmp/testmount/.interface", O_RDWR);
+
+    if (fd == -1) {
+        printf("Error in opening file \n");
+        exit(-1);
+    }
+    
+    int32_t x = 4;
+    int ioctl_ret = ioctl(fd, IOCTL_HELLO, &x);
+    std::cout << EBADF << " " << EFAULT << " " << EINVAL << " " << ENOTTY << " " << std::endl;
+    std::cout << "IOCTL returned: " << ioctl_ret << " " << errno << std::endl;
+
+    close(fd);
+
     // Validate params
     validate_args(argc, argv);
 

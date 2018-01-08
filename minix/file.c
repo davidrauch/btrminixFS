@@ -8,7 +8,7 @@
 
 #include "minix.h"
 #include <linux/buffer_head.h>
-
+#include "ioctl_basic.h" 
 
 // CoW implementation
 static int minix_clone_file_range(struct file *src_file, loff_t off,
@@ -95,6 +95,21 @@ static int minix_clone_file_range(struct file *src_file, loff_t off,
 	return 0;
 }
 
+long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg) {
+
+	int ret=0;
+
+	debug_log("ioctl command: %d, expected %d", cmd, IOCTL_HELLO);
+
+	switch(cmd) {
+		case IOCTL_HELLO: 
+			debug_log("Hello ioctl world");
+			break;
+	} 
+
+	return ret;
+}
+
 /*
  * We have mostly NULLs here: the current defaults are OK for
  * the minix filesystem.
@@ -107,6 +122,7 @@ const struct file_operations minix_file_operations = {
 	.fsync		= generic_file_fsync,
 	.splice_read	= generic_file_splice_read,
 	.clone_file_range	= minix_clone_file_range,
+	.unlocked_ioctl = ioctl_funcs,
 };
 
 static int minix_setattr(struct dentry *dentry, struct iattr *attr)
