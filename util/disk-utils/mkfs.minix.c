@@ -651,6 +651,7 @@ static void setup_tables(const struct fs_control *ctl) {
 	printf(P_("%lu block\n", "%lu blocks\n", zones), zones);
 	printf(_("Firstdatazone=%jd (%jd)\n"),
 		(intmax_t)get_first_zone(), (intmax_t)first_zone_data());
+	printf("Reserved %ld blocks for snapshots\n", get_snapshot_blocks());
 	printf(_("Zonesize=%zu\n"), (size_t) MINIX_BLOCK_SIZE << get_zone_size());
 	printf(_("Maxsize=%zu\n\n"),get_max_size());
 }

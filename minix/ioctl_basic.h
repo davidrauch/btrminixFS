@@ -1,4 +1,6 @@
 #include <linux/ioctl.h>
 
 #define IOC_MAGIC 'k'
-#define IOCTL_HELLO _IOWR(IOC_MAGIC, 0, int32_t*)
+#define IOCTL_ALTMINIX_CREATE_SNAPSHOT _IOWR(IOC_MAGIC, 0, int32_t*)
+#define IOCTL_ALTMINIX_ROLLBACK_SNAPSHOT _IOWR(IOC_MAGIC, 1, int32_t*)
+#define IOCTL_ALTMINIX_REMOVE_SNAPSHOT _IOWR(IOC_MAGIC, 2, int32_t*)

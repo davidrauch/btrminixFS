@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
+#include <mntent.h>
 
 #include "snapshots.h"
 #include "errors.h"
@@ -54,21 +55,37 @@ void validate_args(int argc, char * argv[]) {
     }
 }
 
-int main(int argc, char * argv[]) {
-    // Test ioctl
-    int fd = open("/tmp/testmount/.interface", O_RDWR);
-
-    if (fd == -1) {
-        printf("Error in opening file \n");
-        exit(-1);
+std::string get_device_path(std::string mount_path) {
+    struct mntent *ent;
+    FILE *mnt_file = setmntent("/proc/mounts", "r");
+    if (mnt_file == NULL) {
+        perror("setmntent");
+        exit(1);
     }
-    
-    int32_t x = 4;
-    int ioctl_ret = ioctl(fd, IOCTL_HELLO, &x);
-    std::cout << EBADF << " " << EFAULT << " " << EINVAL << " " << ENOTTY << " " << std::endl;
-    std::cout << "IOCTL returned: " << ioctl_ret << " " << errno << std::endl;
 
-    close(fd);
+    while (NULL != (ent = getmntent(mnt_file))) {
+        if(mount_path.compare(ent->mnt_dir) == 0) {
+            return std::string(ent->mnt_fsname);
+        }
+    }
+    endmntent(mnt_file);
+
+    return std::string();
+}
+
+void remount(std::string volume_path, std::string device_path) {
+    // TODO: Use syscalls
+    std::ostringstream umount_cmd;
+    umount_cmd << "umount " << volume_path;
+    system(umount_cmd.str().c_str());
+
+    std::ostringstream mount_cmd;
+    mount_cmd << "mount -t altminix " << device_path << " " << volume_path;
+    system(mount_cmd.str().c_str());
+}
+
+int main(int argc, char * argv[]) {
+    //std::cout << EBADF << " " << EFAULT << " " << EINVAL << " " << ENOTTY << " " << std::endl;
 
     // Validate params
     validate_args(argc, argv);
@@ -82,15 +99,42 @@ int main(int argc, char * argv[]) {
         source_volume_invalid();
     }
 
+    std::string device_path = get_device_path(volume_path);
+    if(device_path.length() ==0) {
+        source_volume_invalid();
+    }
+
+    // Umount and remond to clean up
+    // TODO: Use syscall, or fix driver so that this is not needed
+    remount(volume_path, device_path);
+
+    // Test ioctl
+    int fd = open("/tmp/testmount/.snapshots/.interface", O_RDWR);
+
+    if (fd == -1) {
+        printf("Error in opening file \n");
+        exit(-1);
+    }
+
     // At this point we can perform the action
     std::string command(argv[2]);
     if (command.compare("create") == 0) {
-        create_snapshot(volume_path, std::string(argv[4]));
+        int32_t x = 0;
+        int ioctl_ret = ioctl(fd, IOCTL_ALTMINIX_CREATE_SNAPSHOT, &x);
+        //create_snapshot(volume_path, std::string(argv[4]));
     } else if (command.compare("remove") == 0) {
-        remove_snapshot(volume_path, std::string(argv[4]));
+        //remove_snapshot(volume_path, std::string(argv[4]));
+        int32_t x = 0;
+        int ioctl_ret = ioctl(fd, IOCTL_ALTMINIX_REMOVE_SNAPSHOT, &x);
     } else if (command.compare("rollback") == 0) {
-        rollback_snapshot(volume_path, std::string(argv[4]));
+        //rollback_snapshot(volume_path, std::string(argv[4]));
+        int32_t x = 0;
+        int ioctl_ret = ioctl(fd, IOCTL_ALTMINIX_ROLLBACK_SNAPSHOT, &x);
     } else if (command.compare("list") == 0) {
-        list_snapshots(volume_path);
+        //list_snapshots(volume_path);
     }
+
+    close(fd);
+
+    remount(volume_path, device_path);
 }
