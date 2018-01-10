@@ -10,6 +10,66 @@
 #include <linux/highmem.h>
 #include <linux/swap.h>
 
+void cow_dir(struct inode *dir) {
+	struct minix_inode_info *minix_inode = minix_i(dir);
+	struct minix_sb_info *sbi = minix_sb(dir->i_sb);
+	size_t i, data_zone_index, new_block;
+	struct buffer_head *read_bh, *write_bh;
+	unsigned long npages;
+	struct page *page = NULL;
+	bool had_change = false;
+
+	// Clone the inodes pages if needed
+	// Direct blocks: assign to target and increase refcount on blocks
+	for (i = 0; i < INDIRECT_BLOCK_INDEX; i++) {
+		if(minix_inode->u.i2_data[i] == 0) {
+			break;
+		}
+
+		// Check refcount of this data block
+		// Inode contains physical block number!
+		data_zone_index = data_zone_index_for_zone_number(sbi, minix_inode->u.i2_data[i]);
+		if(get_refcount(sbi, data_zone_index) > 1) {
+			// Assign new block
+			new_block = minix_new_block(dir);
+			if (new_block != 0) {
+				// Copy content
+				read_bh = sb_bread(dir->i_sb, minix_inode->u.i2_data[i]);
+				write_bh = sb_bread(dir->i_sb, new_block);
+				memcpy(write_bh->b_data, read_bh->b_data, write_bh->b_size);
+				mark_buffer_dirty(write_bh);
+				sync_dirty_buffer(write_bh);
+				brelse(read_bh);
+				brelse(write_bh);
+
+				// Decrement refcount on old block
+				decrement_refcount(sbi, data_zone_index);
+
+				// Set new block
+				minix_inode->u.i2_data[i] = new_block;
+
+				had_change = true;
+			} else {
+				debug_log("ERROR: Could not get new block for CoW");
+			}
+		}
+	}
+
+	if (had_change) {
+		mark_inode_dirty(dir);
+		write_inode_now(dir, 1);
+
+		// Remove all pages of the directory entry from the cache
+		npages = dir_pages(dir);
+		for(i = 0; i < npages; i++) {
+			page = dir_get_page(dir, i);
+			lock_page(page);
+			delete_from_page_cache(page);
+			unlock_page(page);
+		}
+	}
+}
+
 static int add_nondir(struct dentry *dentry, struct inode *inode)
 {
 	int err = minix_add_link(dentry, inode);
@@ -52,6 +112,8 @@ static int minix_mknod(struct inode * dir, struct dentry *dentry, umode_t mode, 
 	
 	PRINT_FUNC();
 
+	cow_dir(dir);
+
 	if (!old_valid_dev(rdev))
 		return -EINVAL;
 
@@ -68,9 +130,12 @@ static int minix_mknod(struct inode * dir, struct dentry *dentry, umode_t mode, 
 static int minix_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
 	int error;
-	struct inode *inode = minix_new_inode(dir, mode, &error);
-	
+	struct inode *inode;
+
 	PRINT_FUNC();
+	cow_dir(dir);
+	
+	inode = minix_new_inode(dir, mode, &error);
 	
 	if (inode) {
 		minix_set_inode(inode, 0);
@@ -85,6 +150,8 @@ static int minix_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 {
 	PRINT_FUNC();
 
+	cow_dir(dir);
+
 	return minix_mknod(dir, dentry, mode, 0);
 }
 
@@ -96,6 +163,8 @@ static int minix_symlink(struct inode * dir, struct dentry *dentry,
 	struct inode * inode;
 	
 	PRINT_FUNC();
+
+	cow_dir(dir);
 
 	if (i > dir->i_sb->s_blocksize)
 		goto out;
@@ -126,6 +195,8 @@ static int minix_link(struct dentry * old_dentry, struct inode * dir,
 	
 	PRINT_FUNC();
 
+	cow_dir(inode);
+
 	inode->i_ctime = current_time(inode);
 	inode_inc_link_count(inode);
 	ihold(inode);
@@ -138,6 +209,8 @@ static int minix_mkdir(struct inode * dir, struct dentry *dentry, umode_t mode)
 	int err;
 	
 	PRINT_FUNC();
+
+	cow_dir(dir);
 
 	inode_inc_link_count(dir);
 
@@ -168,62 +241,6 @@ out_fail:
 out_dir:
 	inode_dec_link_count(dir);
 	goto out;
-}
-
-void cow_dir(struct inode *dir) {
-	struct minix_inode_info *minix_inode = minix_i(dir);
-	struct minix_sb_info *sbi = minix_sb(dir->i_sb);
-	size_t i, data_zone_index, new_block;
-	struct buffer_head *read_bh, *write_bh;
-	unsigned long npages;
-	struct page *page = NULL;
-
-	// Clone the inodes pages if needed
-	// Direct blocks: assign to target and increase refcount on blocks
-	for (i = 0; i < INDIRECT_BLOCK_INDEX; i++) {
-		if(minix_inode->u.i2_data[i] == 0) {
-			break;
-		}
-
-		// Check refcount of this data block
-		// Inode contains physical block number!
-		data_zone_index = data_zone_index_for_zone_number(sbi, minix_inode->u.i2_data[i]);
-		if(get_refcount(sbi, data_zone_index) > 1) {
-			// Assign new block
-			new_block = minix_new_block(dir);
-			if (new_block != 0) {
-				// Copy content
-				read_bh = sb_bread(dir->i_sb, minix_inode->u.i2_data[i]);
-				write_bh = sb_bread(dir->i_sb, new_block);
-				memcpy(write_bh->b_data, read_bh->b_data, write_bh->b_size);
-				mark_buffer_dirty(write_bh);
-				sync_dirty_buffer(write_bh);
-				brelse(read_bh);
-				brelse(write_bh);
-
-				// Decrement refcount on old block
-				decrement_refcount(sbi, data_zone_index);
-
-				// Set new block
-				minix_inode->u.i2_data[i] = new_block;
-			} else {
-				debug_log("ERROR: Could not get new block for CoW");
-			}
-		}
-	}
-
-	mark_inode_dirty(dir);
-	write_inode_now(dir, 1);
-
-	// TODO: This seems to be the holy grail to reload an inode from disk...
-	// Use it in other places as well! This could enable online snapshots...
-	npages = dir_pages(dir);
-	for(i = 0; i < npages; i++) {
-		page = dir_get_page(dir, i);
-		lock_page(page);
-		delete_from_page_cache(page);
-		unlock_page(page);
-	}
 }
 
 static int minix_unlink(struct inode * dir, struct dentry *dentry)
@@ -259,6 +276,8 @@ static int minix_rmdir(struct inode * dir, struct dentry *dentry)
 
 	PRINT_FUNC();
 
+	cow_dir(dir);
+
 	if (minix_empty_dir(inode)) {
 		err = minix_unlink(dir, dentry);
 		if (!err) {
@@ -282,6 +301,9 @@ static int minix_rename(struct inode * old_dir, struct dentry *old_dentry,
 	int err = -ENOENT;
 
 	PRINT_FUNC();
+
+	cow_dir(old_inode);
+	cow_dir(new_inode);
 
 	if (flags & ~RENAME_NOREPLACE)
 		return -EINVAL;
