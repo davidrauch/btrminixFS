@@ -308,6 +308,7 @@ void minix_free_inode(struct inode * inode)
 	unsigned long ino, bit;
 
 	ino = inode->i_ino;
+	debug_log("Removing inode %d", inode->i_ino);
 	if (ino < 1 || ino > sbi->s_ninodes) {
 		printk("minix_free_inode: inode 0 or nonexistent inode\n");
 		return;
@@ -372,6 +373,7 @@ struct inode *minix_new_inode(const struct inode *dir, umode_t mode, int *error)
 		return NULL;
 	}
 	inode_init_owner(inode, dir, mode);
+	debug_log("Created inode %d", j);
 	inode->i_ino = j;
 	inode->i_mtime = inode->i_atime = inode->i_ctime = current_time(inode);
 	inode->i_blocks = 0;

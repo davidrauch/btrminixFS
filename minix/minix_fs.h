@@ -27,10 +27,13 @@
 
 #define MINIX_INODES_PER_BLOCK ((BLOCK_SIZE)/(sizeof (struct minix_inode)))
 
-
 #define NUM_ZONES_IN_INODE			9
 #define INDIRECT_BLOCK_INDEX		7
 #define DOUBLE_INDIRECT_BLOCK_INDEX	8
+
+#define SNAPSHOT_BLOCKS_FOR_NAMES	1
+#define SNAPSHOT_NUM_SLOTS			10
+#define SNAPSHOT_NAME_LENGTH		32
 
 /*
  * This is the original minix inode layout on disk.

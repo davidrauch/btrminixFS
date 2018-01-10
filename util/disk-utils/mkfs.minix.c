@@ -90,7 +90,7 @@
 
 #define MINIX_MAX_INODES 65535
 
-#define DEFAULT_FS_VERSION 1
+#define DEFAULT_FS_VERSION 3
 
 /*
  * Global variables used in minix_programs.h inline functions

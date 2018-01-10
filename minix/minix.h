@@ -43,6 +43,7 @@ struct minix_sb_info {
 	__u32 s_inodes_blocks;
 	__u32 s_refcount_table_blocks;
 	struct buffer_head ** s_refcount_table;
+	unsigned long s_snapshots_start_block;
 };
 
 extern struct inode *minix_iget(struct super_block *, unsigned long);
@@ -65,6 +66,7 @@ extern int V1_minix_get_block(struct inode *, long, struct buffer_head *, int);
 extern int V2_minix_get_block(struct inode *, long, struct buffer_head *, int);
 extern unsigned V1_minix_blocks(loff_t, struct super_block *);
 extern unsigned V2_minix_blocks(loff_t, struct super_block *);
+extern struct page * dir_get_page(struct inode *dir, unsigned long n);
 
 extern struct minix_dir_entry *minix_find_entry(struct dentry*, struct page**);
 extern int minix_add_link(struct dentry*, struct inode*);
@@ -74,6 +76,7 @@ extern int minix_empty_dir(struct inode*);
 extern void minix_set_link(struct minix_dir_entry*, struct page*, struct inode*);
 extern struct minix_dir_entry *minix_dotdot(struct inode*, struct page**);
 extern ino_t minix_inode_by_name(struct dentry*);
+extern void minix_destroy_inode(struct inode*);
 
 extern inline uint32_t get_refcount(struct minix_sb_info *, size_t);
 extern inline void set_refcount(struct minix_sb_info *, size_t, uint32_t);
@@ -81,6 +84,11 @@ extern inline uint32_t increment_refcount(struct minix_sb_info *, size_t);
 extern inline uint32_t decrement_refcount(struct minix_sb_info *, size_t);
 extern inline uint32_t data_zone_index_for_zone_number(struct minix_sb_info *, size_t);
 extern void increment_refcounts_on_indirect_block(struct super_block *, uint32_t);
+
+// Snapshots
+void create_snapshot(struct super_block *sb, char *name);
+void rollback_snapshot(struct super_block *sb, char *name);
+void remove_snapshot(struct super_block *sb, char *name);
 
 extern const struct inode_operations minix_file_inode_operations;
 extern const struct inode_operations minix_dir_inode_operations;

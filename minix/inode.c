@@ -79,7 +79,7 @@ static void minix_i_callback(struct rcu_head *head)
 	kmem_cache_free(minix_inode_cachep, minix_i(inode));
 }
 
-static void minix_destroy_inode(struct inode *inode)
+void minix_destroy_inode(struct inode *inode)
 {
 	PRINT_FUNC();
 
@@ -252,6 +252,7 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
 		sbi->s_mount_state = MINIX_VALID_FS;
 		sbi->s_inodes_blocks = m3s->s_inodes_blocks;
 		sbi->s_refcount_table_blocks = m3s->s_refcount_table_blocks;
+		sbi->s_snapshots_start_block = 2 + sbi->s_imap_blocks + sbi->s_zmap_blocks + sbi->s_inodes_blocks + sbi->s_refcount_table_blocks;
 		debug_log("- blocksize is %d\n", m3s->s_blocksize);
 		sb_set_blocksize(s, m3s->s_blocksize);
 		s->s_max_links = MINIX2_LINK_MAX;
@@ -806,7 +807,7 @@ static struct buffer_head * V2_minix_update_inode(struct inode * inode)
 	struct minix_inode_info *minix_inode = minix_i(inode);
 	int i;
 
-	//PRINT_FUNC()
+	PRINT_FUNC()
 	//debug_log("\tWorking on inode %x\n", inode);
 
 	raw_inode = minix_V2_raw_inode(inode->i_sb, inode->i_ino, &bh);

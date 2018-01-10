@@ -95,174 +95,27 @@ static int minix_clone_file_range(struct file *src_file, loff_t off,
 	return 0;
 }
 
-void create_snapshot(struct super_block *sb) {
-	struct minix_sb_info *sbi = minix_sb(sb);
-	size_t i, read_block, write_block;
-	struct buffer_head *read_bh, *write_bh;
-
-	PRINT_FUNC();
-
-	// Get buffer_head to snapshot
-	write_block = 2 + sbi->s_imap_blocks + sbi->s_zmap_blocks + sbi->s_inodes_blocks + sbi->s_refcount_table_blocks;
-	debug_log("\tSnapshot starts at block %ld", write_block);
-
-	// Copy inode bitmap to snapshot
-	for(i = 0; i < sbi->s_imap_blocks; i++) {
-		read_bh = sbi->s_imap[i];
-		write_bh = sb_bread(sb, write_block);
-
-		memcpy(write_bh->b_data, read_bh->b_data, write_bh->b_size);
-		mark_buffer_dirty(write_bh);
-		sync_dirty_buffer(write_bh);
-
-		write_block++;
-	}
-
-	// Copy inodes to snapshot
-	read_block = 2 + sbi->s_imap_blocks + sbi->s_zmap_blocks;
-	for(i = 0; i < sbi->s_inodes_blocks; i++) {
-		read_bh = sb_bread(sb, read_block);
-		write_bh = sb_bread(sb, write_block);
-
-		memcpy(write_bh->b_data, read_bh->b_data, write_bh->b_size);
-		mark_buffer_dirty(write_bh);
-		sync_dirty_buffer(write_bh);
-
-		read_block++;
-		write_block++;
-	}
-
-	debug_log("\tCopied blocks until block %ld\n", write_block);
-
-	// Increment all refcounts > 0 (all current content has to be preserved)
-	for(i = sbi->s_firstdatazone; i < sbi->s_nzones; i++) {
-		read_block = data_zone_index_for_zone_number(sbi, i);
-		if(get_refcount(sbi, read_block) > 0) {
-			increment_refcount(sbi, read_block);
-		}
-	}
-}
-
-void free_data_blocks_of_inode(struct super_block *sb, struct minix2_inode *inode) {
-	size_t i;
-	struct inode fake_inode; // TODO: This isn't very nice...
-	fake_inode.i_sb = sb;
-
-	// Free direct data blocks
-	for(i = 0; i < INDIRECT_BLOCK_INDEX; i++) {
-		if(inode->i_zone[i] == 0) {
-			break;
-		}
-
-		minix_free_block(&fake_inode, inode->i_zone[i]);
-	}
-
-	// TODO: Indirect blocks
-}
-
-void free_data_blocks_of_inodes(struct super_block *sb, size_t imap_start_block, size_t inodes_start_block) {
-	struct minix_sb_info *sbi = minix_sb(sb);
-	size_t imap_block_i, bit, inode_i, inode_block_i, inode_block_offset;
-	struct buffer_head *imap_bh, *inode_bh;
-	struct minix2_inode *inode;
-
-	PRINT_FUNC();
-
-	for(imap_block_i = 0; imap_block_i < sbi->s_imap_blocks; imap_block_i++) {
-		imap_bh = sb_bread(sb, imap_start_block + imap_block_i);
-
-		for(bit = 0; bit < sb->s_blocksize << 3; bit++) {
-			inode_i = imap_block_i * sb->s_blocksize_bits + bit;
-			if(inode_i >= sbi->s_ninodes) {
-				break;
-			}
-
-			if(minix_test_bit(bit, imap_bh->b_data)) {
-				debug_log("Found inode %ld in use\n", inode_i);
-
-				// Read inode
-				inode_block_i = inode_i / (sb->s_blocksize / sizeof(struct minix2_inode));
-				inode_block_offset = inode_i % (sb->s_blocksize / sizeof(struct minix2_inode));
-				
-				debug_log("Inode is in block %ld at offset %ld\n", inode_block_i, inode_block_offset);
-
-				inode_bh = sb_bread(sb, inodes_start_block + inode_block_i);
-				inode = ((struct minix2_inode*)inode_bh->b_data) + inode_block_offset;
-
-				free_data_blocks_of_inode(sb, inode);
-			}
-		}
-
-	}
-}
-
-void rollback_snapshot(struct super_block *sb) {
-	struct minix_sb_info *sbi = minix_sb(sb);
-	size_t i, read_block, write_block;
-	struct buffer_head *read_bh, *write_bh;
-
-	PRINT_FUNC();
-
-	// Remove current content
-	free_data_blocks_of_inodes(sb, 2, 2 + sbi->s_imap_blocks + sbi->s_zmap_blocks);
-
-	// Get buffer_head to snapshot
-	read_block = 2 + sbi->s_imap_blocks + sbi->s_zmap_blocks + sbi->s_inodes_blocks + sbi->s_refcount_table_blocks;
-	debug_log("\tSnapshot starts at block %ld", read_block);
-	read_bh = sb_bread(sb, read_block);
-
-	// Copy inode bitmap from snapshot
-	for(i = 0; i < sbi->s_imap_blocks; i++) {
-		write_bh = sbi->s_imap[i];
-		read_bh = sb_bread(sb, read_block);
-
-		memcpy(write_bh->b_data, read_bh->b_data, write_bh->b_size);
-		mark_buffer_dirty(write_bh);
-		sync_dirty_buffer(write_bh);
-
-		read_block++;
-	}
-
-	// Copy inodes to snapshot
-	write_block = 2 + sbi->s_imap_blocks + sbi->s_zmap_blocks;
-	for(i = 0; i < sbi->s_inodes_blocks; i++) {
-		write_bh = sb_bread(sb, write_block);
-		read_bh = sb_bread(sb, read_block);
-
-		memcpy(write_bh->b_data, read_bh->b_data, write_bh->b_size);
-		mark_buffer_dirty(write_bh);
-		sync_dirty_buffer(write_bh);
-
-		write_block++;
-		read_block++;
-	}
-
-	debug_log("\tCopied blocks until block %ld\n", read_block);
-}
-
-void remove_snapshot(struct super_block *sb) {
-	struct minix_sb_info *sbi = minix_sb(sb);
-	size_t snapshot_start_block = 2 + sbi->s_imap_blocks + sbi->s_zmap_blocks + sbi->s_inodes_blocks + sbi->s_refcount_table_blocks;
-
-	PRINT_FUNC();
-
-	// Remove snapshot content
-	free_data_blocks_of_inodes(sb, snapshot_start_block, snapshot_start_block + sbi->s_imap_blocks);
-}
-
 long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg) {
 	int ret=0;
 	struct super_block *sb = filp->f_inode->i_sb;
+	char __user *snapshot_name_userspace;
+	char snapshot_name[SNAPSHOT_NAME_LENGTH];
 
 	switch(cmd) {
 		case IOCTL_ALTMINIX_CREATE_SNAPSHOT:
-			create_snapshot(sb);
+		 	snapshot_name_userspace = (char __user*) arg;
+		 	copy_from_user(snapshot_name, snapshot_name_userspace, SNAPSHOT_NAME_LENGTH);
+			create_snapshot(sb, snapshot_name);
 			break;
 		case IOCTL_ALTMINIX_ROLLBACK_SNAPSHOT:
-			rollback_snapshot(sb);
+			snapshot_name_userspace = (char __user*) arg;
+		 	copy_from_user(snapshot_name, snapshot_name_userspace, SNAPSHOT_NAME_LENGTH);
+			rollback_snapshot(sb, snapshot_name);
 			break;
 		case IOCTL_ALTMINIX_REMOVE_SNAPSHOT:
-			remove_snapshot(sb);
+			snapshot_name_userspace = (char __user*) arg;
+		 	copy_from_user(snapshot_name, snapshot_name_userspace, SNAPSHOT_NAME_LENGTH);
+			remove_snapshot(sb, snapshot_name);
 			break;
 	} 
 

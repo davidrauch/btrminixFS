@@ -32,7 +32,8 @@ void validate_args(int argc, char * argv[]) {
     if (command.compare("create") == 0) {
         if (argc != 5 ||
             strlen(argv[3]) == 0 ||
-            strlen(argv[4]) == 0) {
+            strlen(argv[4]) == 0 ||
+            strlen(argv[4]) >= 32) {
             params_invalid();
         }
     } else if (command.compare("remove") == 0) {
@@ -119,17 +120,18 @@ int main(int argc, char * argv[]) {
     // At this point we can perform the action
     std::string command(argv[2]);
     if (command.compare("create") == 0) {
-        int32_t x = 0;
-        int ioctl_ret = ioctl(fd, IOCTL_ALTMINIX_CREATE_SNAPSHOT, &x);
+        char name[32];
+        memcpy(name, argv[4], 32);
+        int ioctl_ret = ioctl(fd, IOCTL_ALTMINIX_CREATE_SNAPSHOT, name);
         //create_snapshot(volume_path, std::string(argv[4]));
     } else if (command.compare("remove") == 0) {
-        //remove_snapshot(volume_path, std::string(argv[4]));
-        int32_t x = 0;
-        int ioctl_ret = ioctl(fd, IOCTL_ALTMINIX_REMOVE_SNAPSHOT, &x);
+        char name[32];
+        memcpy(name, argv[4], 32);
+        int ioctl_ret = ioctl(fd, IOCTL_ALTMINIX_REMOVE_SNAPSHOT, name);
     } else if (command.compare("rollback") == 0) {
-        //rollback_snapshot(volume_path, std::string(argv[4]));
-        int32_t x = 0;
-        int ioctl_ret = ioctl(fd, IOCTL_ALTMINIX_ROLLBACK_SNAPSHOT, &x);
+        char name[32];
+        memcpy(name, argv[4], 32);
+        int ioctl_ret = ioctl(fd, IOCTL_ALTMINIX_ROLLBACK_SNAPSHOT, name);
     } else if (command.compare("list") == 0) {
         //list_snapshots(volume_path);
     }
