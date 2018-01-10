@@ -91,11 +91,10 @@ int main(int argc, char * argv[]) {
 
     // At this point we know we have valid params
     std::string volume_path(argv[3]);
-    std::string snapshots_dir(join_paths(volume_path, snapshots_dir_name));
-    std::string snapshot_iface_file(join_paths(snapshots_dir, std::string(".interface")));
+    std::string snapshot_iface_file(join_paths(volume_path, std::string(".altminix")));
 
     // Check source volume
-    if (!stdfs::is_directory(volume_path) || !stdfs::is_directory(snapshots_dir)) {
+    if (!stdfs::is_directory(volume_path) || !stdfs::exists(snapshot_iface_file)) {
         source_volume_invalid();
     }
 
@@ -104,7 +103,7 @@ int main(int argc, char * argv[]) {
         source_volume_invalid();
     }
 
-    // Umount and remond to clean up
+    // Unmount and remond to clean up
     // TODO: Use syscall, or fix driver so that this is not needed
     remount(volume_path, device_path);
 
@@ -124,7 +123,7 @@ int main(int argc, char * argv[]) {
     } else if (command.compare("rollback") == 0) {
         rollback_snapshot(fd, argv[4]);
     } else if (command.compare("list") == 0) {
-        //list_snapshots(volume_path);
+        list_snapshots(fd);
     }
 
     close(fd);

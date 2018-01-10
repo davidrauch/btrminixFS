@@ -20,7 +20,7 @@ void snapshot_name_invalid() {
 }
 
 void ioctl_error(long code) {
-	std::cout << "Code is " << code << std::endl;
+	//std::cout << "Code is " << code << std::endl;
 	switch(code) {
 	case -IOCTL_ERROR_SNAPSHOT_EXISTS:
 		std::cout << "Error: This snapshot name already exists" << std::endl;

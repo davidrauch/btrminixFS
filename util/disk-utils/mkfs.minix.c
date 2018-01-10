@@ -83,7 +83,7 @@
 
 #define MINIX_ROOT_INO 1
 #define MINIX_BAD_INO 2
-#define MINIX_REFCOUNT_INO 3
+#define MINIX_ALTMINIX_INO 3
 
 #define TEST_BUFFER_BLOCKS 16
 #define MAX_GOOD_BLOCKS 512
@@ -193,6 +193,7 @@ static void super_set_state(void)
 	}
 }
 
+/*
 static void print_zone_map(void)
 {
 	unsigned long i;
@@ -223,6 +224,7 @@ static void print_refcount_table(void)
 
 	printf("\n");
 }
+*/
 
 static void write_tables(const struct fs_control *ctl) {
 	unsigned long imaps = get_nimaps();
@@ -455,10 +457,10 @@ static void make_root_inode_v2_v3 (struct fs_control *ctl) {
 	inode->i_atime = inode->i_mtime = inode->i_ctime = mkfs_minix_time(NULL);
 
 	if (ctl->fs_bad_blocks)
-		inode->i_size = 3 * ctl->fs_dirsize;
+		inode->i_size = 4 * ctl->fs_dirsize;
 	else {
-		memset(&root_block[2 * ctl->fs_dirsize], 0, ctl->fs_dirsize);
-		inode->i_size = 2 * ctl->fs_dirsize;
+		memset(&root_block[3 * ctl->fs_dirsize], 0, ctl->fs_dirsize);
+		inode->i_size = 3 * ctl->fs_dirsize;
 	}
 
 	inode->i_mode = S_IFDIR + 0555;
@@ -467,6 +469,19 @@ static void make_root_inode_v2_v3 (struct fs_control *ctl) {
 	if (inode->i_uid)
 		inode->i_gid = getgid();
 	write_block (ctl, inode->i_zone[0], root_block);
+}
+
+static void make_altminix_inode(void) {
+	struct minix2_inode *inode = &Inode2[MINIX_ALTMINIX_INO];
+
+	mark_inode(MINIX_ALTMINIX_INO);
+	inode->i_nlinks = 1;
+	inode->i_atime = inode->i_mtime = inode->i_ctime = mkfs_minix_time(NULL);
+	inode->i_size = 0;
+	inode->i_mode = S_IFREG;
+	inode->i_real_mode = S_IFREG;
+	inode->i_uid = 0;
+	inode->i_gid = 0;
 }
 
 static void make_root_inode(struct fs_control *ctl)
@@ -479,6 +494,9 @@ static void make_root_inode(struct fs_control *ctl)
 		tmp += ctl->fs_dirsize;
 		*(uint32_t *) tmp = 1;
 		strcpy(tmp + 4, "..");
+		tmp += ctl->fs_dirsize;
+		*(uint32_t *) tmp = 3;
+		strcpy(tmp + 4, ".altminix");
 		tmp += ctl->fs_dirsize;
 		*(uint32_t *) tmp = 2;
 		strcpy(tmp + 4, ".badblocks");
@@ -916,6 +934,7 @@ int main(int argc, char ** argv)
 
 	make_root_inode(&ctl);
 	make_bad_inode(&ctl);
+	make_altminix_inode();
 
 	mark_good_blocks(&ctl);
 	write_tables(&ctl);

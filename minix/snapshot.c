@@ -152,6 +152,13 @@ int get_slot_of_snapshot_name(struct super_block *sb, char *name) {
 }
 
 
+// Gets snapshot name in a given slot
+char* get_snapshot_name_of_slot(struct super_block *sb, size_t slot) {
+	struct buffer_head *snapshot_names_bh = get_bh_to_snapshot_names(sb);
+	return snapshot_names_bh->b_data + (slot * SNAPSHOT_NAME_LENGTH);
+}
+
+
 size_t get_block_for_snapshot_slot(struct super_block *sb, int slot) {
 	struct minix_sb_info *sbi = minix_sb(sb);
 	size_t snapshot_size = sbi->s_imap_blocks + sbi->s_inodes_blocks;
@@ -279,7 +286,7 @@ long rollback_snapshot(struct super_block *sb, char *name) {
 
 	debug_log("\tCopied blocks until block %ld\n", read_block);
 
-	// Increase refounct for current content
+	// Increase refcount for current content
 	do_for_blocks_of_inodes(sb, 2, 2 + sbi->s_imap_blocks + sbi->s_zmap_blocks, increment_refcount_for_blocks_of_inode);
 
 	return 0;
@@ -307,6 +314,33 @@ long remove_snapshot(struct super_block *sb, char *name) {
 
 	// Remove snapshot name
 	write_snapshot_name(sb, slot, "");
+
+	return 0;
+}
+
+long slot_of_snapshot(struct super_block *sb, char *name) {
+	int slot;
+
+	PRINT_FUNC();
+
+	// Find snapshot slot
+	slot = get_slot_of_snapshot_name(sb, name);
+	if(slot == -1) {
+		debug_log("\tSnapshot does not exist\n");
+		return IOCTL_ERROR_SNAPSHOT_DOES_NOT_EXIST;
+	}
+
+	return slot;
+}
+
+long list_snapshots(struct super_block *sb, char *names) {
+	size_t i;
+	char *name;
+
+	for(i = 0; i < SNAPSHOT_NUM_SLOTS; i++) {
+		name = get_snapshot_name_of_slot(sb, i);
+		strncpy(names + i * SNAPSHOT_NAME_LENGTH, name, SNAPSHOT_NAME_LENGTH);
+	}
 
 	return 0;
 }

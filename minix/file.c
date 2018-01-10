@@ -99,23 +99,39 @@ long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg) {
 	long ret = 0;
 	struct super_block *sb = filp->f_inode->i_sb;
 	char __user *snapshot_name_userspace;
+	char __user *snapshot_struct_userspace;
 	char snapshot_name[SNAPSHOT_NAME_LENGTH];
+	struct snapshot_slot snapshot_struct;
+	int snapshot_slot;
+	char names[SNAPSHOT_NUM_SLOTS * SNAPSHOT_NAME_LENGTH];
 
 	switch(cmd) {
 		case IOCTL_ALTMINIX_CREATE_SNAPSHOT:
-		 	snapshot_name_userspace = (char __user*) arg;
-		 	copy_from_user(snapshot_name, snapshot_name_userspace, SNAPSHOT_NAME_LENGTH);
+			snapshot_name_userspace = (char __user*) arg;
+			copy_from_user(snapshot_name, snapshot_name_userspace, SNAPSHOT_NAME_LENGTH);
 			ret = create_snapshot(sb, snapshot_name);
 			break;
 		case IOCTL_ALTMINIX_ROLLBACK_SNAPSHOT:
 			snapshot_name_userspace = (char __user*) arg;
-		 	copy_from_user(snapshot_name, snapshot_name_userspace, SNAPSHOT_NAME_LENGTH);
+			copy_from_user(snapshot_name, snapshot_name_userspace, SNAPSHOT_NAME_LENGTH);
 			ret = rollback_snapshot(sb, snapshot_name);
 			break;
 		case IOCTL_ALTMINIX_REMOVE_SNAPSHOT:
 			snapshot_name_userspace = (char __user*) arg;
-		 	copy_from_user(snapshot_name, snapshot_name_userspace, SNAPSHOT_NAME_LENGTH);
+			copy_from_user(snapshot_name, snapshot_name_userspace, SNAPSHOT_NAME_LENGTH);
 			ret = remove_snapshot(sb, snapshot_name);
+			break;
+		case IOCTL_ALTMINIX_SLOT_OF_SNAPSHOT:
+			snapshot_struct_userspace = (char __user*) arg;
+			copy_from_user(&snapshot_struct, snapshot_struct_userspace, sizeof(snapshot_struct));
+			copy_from_user(snapshot_name, snapshot_struct.name, SNAPSHOT_NAME_LENGTH);
+			snapshot_slot = slot_of_snapshot(sb, snapshot_name);
+			copy_to_user(snapshot_struct.slot, &snapshot_slot, sizeof(int));
+			ret = 0;
+			break;
+		case IOCTL_ALTMINIX_LIST_SNAPSHOTS:
+			ret = list_snapshots(sb, names);
+			copy_to_user((char __user*) arg, names, SNAPSHOT_NUM_SLOTS * SNAPSHOT_NAME_LENGTH);
 			break;
 	} 
 
