@@ -86,9 +86,9 @@ extern inline uint32_t data_zone_index_for_zone_number(struct minix_sb_info *, s
 extern void increment_refcounts_on_indirect_block(struct super_block *, uint32_t);
 
 // Snapshots
-void create_snapshot(struct super_block *sb, char *name);
-void rollback_snapshot(struct super_block *sb, char *name);
-void remove_snapshot(struct super_block *sb, char *name);
+long create_snapshot(struct super_block *sb, char *name);
+long rollback_snapshot(struct super_block *sb, char *name);
+long remove_snapshot(struct super_block *sb, char *name);
 
 extern const struct inode_operations minix_file_inode_operations;
 extern const struct inode_operations minix_dir_inode_operations;

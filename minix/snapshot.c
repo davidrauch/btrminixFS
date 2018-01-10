@@ -1,5 +1,7 @@
-#include "minix.h"
 #include <linux/buffer_head.h>
+
+#include "minix.h"
+#include "ioctl_basic.h"
 
 
 // Frees all blocks associated with an inode (even indirect blocks themselves)
@@ -158,7 +160,7 @@ size_t get_block_for_snapshot_slot(struct super_block *sb, int slot) {
 
 
 // Creates a new snapshot
-void create_snapshot(struct super_block *sb, char *name) {
+long create_snapshot(struct super_block *sb, char *name) {
 	struct minix_sb_info *sbi = minix_sb(sb);
 	size_t i, read_block, write_block;
 	struct buffer_head *read_bh, *write_bh;
@@ -170,15 +172,13 @@ void create_snapshot(struct super_block *sb, char *name) {
 	slot = get_free_snapshot_slot(sb);
 	if(slot == -1) {
 		debug_log("\tNo free slots for snapshot\n");
-		return;
-		// TODO: Return proper error
+		return IOCTL_ERROR_NO_FREE_SNAPSHOTS;
 	}
 
 	// Check if name is free
 	if(get_slot_of_snapshot_name(sb, name) != -1) {
 		debug_log("\tName already exists\n");
-		return;
-		// TODO: Return proper error
+		return IOCTL_ERROR_SNAPSHOT_EXISTS;
 	}
 
 	// Get buffer_head to snapshot slot
@@ -221,11 +221,13 @@ void create_snapshot(struct super_block *sb, char *name) {
 	write_snapshot_name(sb, slot, name);
 
 	debug_log("\tPut snapshot %s in slot %d\n", name, slot);
+
+	return 0;
 }
 
 
 // Rolls back to a given snapshot
-void rollback_snapshot(struct super_block *sb, char *name) {
+long rollback_snapshot(struct super_block *sb, char *name) {
 	struct minix_sb_info *sbi = minix_sb(sb);
 	size_t i, read_block, write_block;
 	struct buffer_head *read_bh, *write_bh;
@@ -238,8 +240,7 @@ void rollback_snapshot(struct super_block *sb, char *name) {
 	slot = get_slot_of_snapshot_name(sb, name);
 	if(slot == -1) {
 		debug_log("\tSnapshot does not exist\n");
-		return;
-		// TODO: Return proper error
+		return IOCTL_ERROR_SNAPSHOT_DOES_NOT_EXIST;
 	}
 
 	// Remove current content
@@ -280,11 +281,13 @@ void rollback_snapshot(struct super_block *sb, char *name) {
 
 	// Increase refounct for current content
 	do_for_blocks_of_inodes(sb, 2, 2 + sbi->s_imap_blocks + sbi->s_zmap_blocks, increment_refcount_for_blocks_of_inode);
+
+	return 0;
 }
 
 
 // Removes a given snapshot
-void remove_snapshot(struct super_block *sb, char *name) {
+long remove_snapshot(struct super_block *sb, char *name) {
 	struct minix_sb_info *sbi = minix_sb(sb);
 	size_t snapshot_block;
 	int slot;
@@ -295,8 +298,7 @@ void remove_snapshot(struct super_block *sb, char *name) {
 	slot = get_slot_of_snapshot_name(sb, name);
 	if(slot == -1) {
 		debug_log("\tSnapshot does not exist\n");
-		return;
-		// TODO: Return proper error
+		return IOCTL_ERROR_SNAPSHOT_DOES_NOT_EXIST;
 	}
 	snapshot_block = get_block_for_snapshot_slot(sb, slot);
 
@@ -305,4 +307,6 @@ void remove_snapshot(struct super_block *sb, char *name) {
 
 	// Remove snapshot name
 	write_snapshot_name(sb, slot, "");
+
+	return 0;
 }

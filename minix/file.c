@@ -96,7 +96,7 @@ static int minix_clone_file_range(struct file *src_file, loff_t off,
 }
 
 long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg) {
-	int ret=0;
+	long ret = 0;
 	struct super_block *sb = filp->f_inode->i_sb;
 	char __user *snapshot_name_userspace;
 	char snapshot_name[SNAPSHOT_NAME_LENGTH];
@@ -105,17 +105,17 @@ long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg) {
 		case IOCTL_ALTMINIX_CREATE_SNAPSHOT:
 		 	snapshot_name_userspace = (char __user*) arg;
 		 	copy_from_user(snapshot_name, snapshot_name_userspace, SNAPSHOT_NAME_LENGTH);
-			create_snapshot(sb, snapshot_name);
+			ret = create_snapshot(sb, snapshot_name);
 			break;
 		case IOCTL_ALTMINIX_ROLLBACK_SNAPSHOT:
 			snapshot_name_userspace = (char __user*) arg;
 		 	copy_from_user(snapshot_name, snapshot_name_userspace, SNAPSHOT_NAME_LENGTH);
-			rollback_snapshot(sb, snapshot_name);
+			ret = rollback_snapshot(sb, snapshot_name);
 			break;
 		case IOCTL_ALTMINIX_REMOVE_SNAPSHOT:
 			snapshot_name_userspace = (char __user*) arg;
 		 	copy_from_user(snapshot_name, snapshot_name_userspace, SNAPSHOT_NAME_LENGTH);
-			remove_snapshot(sb, snapshot_name);
+			ret = remove_snapshot(sb, snapshot_name);
 			break;
 	} 
 

@@ -1,10 +1,10 @@
 #include <iostream>
-#include <cstring>
 #include <string>
+#include <cstring>
 #include <set>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/ioctl.h>
+
 #include <experimental/filesystem>
 #include <fcntl.h>
 #include <unistd.h>
@@ -15,8 +15,6 @@
 #include "snapshots.h"
 #include "errors.h"
 #include "utils.h"
-
-#include "../minix/ioctl_basic.h"
 
 namespace stdfs = std::experimental::filesystem;
 
@@ -94,6 +92,7 @@ int main(int argc, char * argv[]) {
     // At this point we know we have valid params
     std::string volume_path(argv[3]);
     std::string snapshots_dir(join_paths(volume_path, snapshots_dir_name));
+    std::string snapshot_iface_file(join_paths(snapshots_dir, std::string(".interface")));
 
     // Check source volume
     if (!stdfs::is_directory(volume_path) || !stdfs::is_directory(snapshots_dir)) {
@@ -110,28 +109,20 @@ int main(int argc, char * argv[]) {
     remount(volume_path, device_path);
 
     // Test ioctl
-    int fd = open("/tmp/testmount/.snapshots/.interface", O_RDWR);
-
+    int fd = open(snapshot_iface_file.c_str(), O_RDWR);
     if (fd == -1) {
-        printf("Error in opening file \n");
+        source_volume_invalid();
         exit(-1);
     }
 
     // At this point we can perform the action
     std::string command(argv[2]);
     if (command.compare("create") == 0) {
-        char name[32];
-        memcpy(name, argv[4], 32);
-        int ioctl_ret = ioctl(fd, IOCTL_ALTMINIX_CREATE_SNAPSHOT, name);
-        //create_snapshot(volume_path, std::string(argv[4]));
+        create_snapshot(fd, argv[4]);
     } else if (command.compare("remove") == 0) {
-        char name[32];
-        memcpy(name, argv[4], 32);
-        int ioctl_ret = ioctl(fd, IOCTL_ALTMINIX_REMOVE_SNAPSHOT, name);
+        remove_snapshot(fd, argv[4]);
     } else if (command.compare("rollback") == 0) {
-        char name[32];
-        memcpy(name, argv[4], 32);
-        int ioctl_ret = ioctl(fd, IOCTL_ALTMINIX_ROLLBACK_SNAPSHOT, name);
+        rollback_snapshot(fd, argv[4]);
     } else if (command.compare("list") == 0) {
         //list_snapshots(volume_path);
     }
