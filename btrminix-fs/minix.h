@@ -119,10 +119,10 @@ static inline unsigned minix_blocks_needed(unsigned bits, unsigned blocksize)
 static inline void debug_log(const char* format, ...) {
 	// Declarations
 	va_list arg;
-	const char *prefix = "ALTMINIX: ";
+	const char *prefix = "BTRMINIX: ";
 	char result[strlen(prefix)+strlen(format)]; // +1 for the null-terminator
 
-	// ALTMINIX prefix
+	// BTRMINIX prefix
     strcpy(result, prefix);
     strcat(result, format);
 

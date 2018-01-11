@@ -1,2 +1,2 @@
 #!/bin/sh
-sudo rmmod altminix
+sudo rmmod btrminix

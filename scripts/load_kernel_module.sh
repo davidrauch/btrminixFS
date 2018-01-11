@@ -1,2 +1,2 @@
 #!/bin/sh
-sudo insmod ../minix/altminix.ko
+sudo insmod ../btrminix-fs/btrminix.ko
