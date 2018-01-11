@@ -72,6 +72,11 @@ inline uint32_t increment_refcount(struct minix_sb_info *sbi, size_t data_block_
 	return get_refcount(sbi, data_block_index);
 }
 
+inline uint32_t increment_refcount_snapshot_callback(struct super_block *sb, size_t block_index) {
+	struct minix_sb_info *sbi = minix_sb(sb);
+	return increment_refcount(sbi, data_zone_index_for_zone_number(sbi, block_index));
+}
+
 /**
  * Decrements the refcount of a particular data block
  * Returns the new refcount
@@ -144,9 +149,8 @@ static __u32 count_free(struct buffer_head *map[], unsigned blocksize, __u32 num
 	return sum;
 }
 
-void minix_free_block(struct inode *inode, unsigned long block)
+void minix_free_block(struct super_block *sb, unsigned long block)
 {
-	struct super_block *sb = inode->i_sb;
 	struct minix_sb_info *sbi = minix_sb(sb);
 	struct buffer_head *bh;
 	int k = sb->s_blocksize_bits + 3;

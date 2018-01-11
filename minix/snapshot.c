@@ -4,11 +4,10 @@
 #include "ioctl_basic.h"
 
 
-// Frees all blocks associated with an inode (even indirect blocks themselves)
-void free_blocks_of_inode(struct super_block *sb, struct minix2_inode *inode) {
+// Calls a callback for all blocks of the given inode
+void do_for_blocks_of_inode(struct super_block *sb, struct minix2_inode *inode, void(*callback)(struct super_block*, size_t)) {
 	size_t i;
-	struct inode fake_inode; // TODO: This isn't very nice...
-	fake_inode.i_sb = sb;
+	//struct minix_sb_info *sbi = minix_sb(sb);
 
 	// Free direct data blocks
 	for(i = 0; i < INDIRECT_BLOCK_INDEX; i++) {
@@ -18,34 +17,13 @@ void free_blocks_of_inode(struct super_block *sb, struct minix2_inode *inode) {
 
 		debug_log("\tInode contains data block %d", inode->i_zone[i]);
 
-		minix_free_block(&fake_inode, inode->i_zone[i]);
+		callback(sb, inode->i_zone[i]);
 	}
-
-	// TODO: Indirect blocks
-}
-
-// Frees all blocks associated with an inode (even indirect blocks themselves)
-void increment_refcount_for_blocks_of_inode(struct super_block *sb, struct minix2_inode *inode) {
-	size_t i;
-	struct minix_sb_info *sbi = minix_sb(sb);
-
-	// Free direct data blocks
-	for(i = 0; i < INDIRECT_BLOCK_INDEX; i++) {
-		if(inode->i_zone[i] == 0) {
-			break;
-		}
-
-		debug_log("\tInode contains data block %d", inode->i_zone[i]);
-
-		increment_refcount(sbi, data_zone_index_for_zone_number(sbi, inode->i_zone[i]));
-	}
-
-	// TODO: Indirect blocks
 }
 
 
-// Frees all blocks associated with inodes found at the specified location
-void do_for_blocks_of_inodes(struct super_block *sb, size_t imap_start_block, size_t inodes_start_block, void (*callback)(struct super_block*, struct minix2_inode*)) {
+// Calls a callback for all blocks of all inodes found in the specified blocks
+void do_for_blocks_of_inodes(struct super_block *sb, size_t imap_start_block, size_t inodes_start_block, void(*callback)(struct super_block*, size_t)) {
 	struct minix_sb_info *sbi = minix_sb(sb);
 	size_t imap_block_i, bit, inode_i, inode_block_i, inode_block_offset;
 	struct buffer_head *imap_bh, *inode_bh;
@@ -81,7 +59,7 @@ void do_for_blocks_of_inodes(struct super_block *sb, size_t imap_start_block, si
 				inode_bh = sb_bread(sb, inodes_start_block + inode_block_i);
 				inode = ((struct minix2_inode*)inode_bh->b_data) + inode_block_offset;
 
-				callback(sb, inode);
+				do_for_blocks_of_inode(sb, inode, callback);
 			}
 		}
 
@@ -221,7 +199,7 @@ long create_snapshot(struct super_block *sb, char *name) {
 	debug_log("\tCopied blocks until block %ld\n", write_block);
 
 	// Increment refcount of currently referenced data blocks
-	do_for_blocks_of_inodes(sb, 2, 2 + sbi->s_imap_blocks + sbi->s_zmap_blocks, increment_refcount_for_blocks_of_inode);
+	do_for_blocks_of_inodes(sb, 2, 2 + sbi->s_imap_blocks + sbi->s_zmap_blocks, (void(*)(struct super_block*, size_t))increment_refcount_snapshot_callback);
 
 	// Write snapshot name to table
 	debug_log("\tPutting snapshot %s in slot %d\n", name, slot);
@@ -251,7 +229,7 @@ long rollback_snapshot(struct super_block *sb, char *name) {
 	}
 
 	// Remove current content
-	do_for_blocks_of_inodes(sb, 2, 2 + sbi->s_imap_blocks + sbi->s_zmap_blocks, free_blocks_of_inode);
+	do_for_blocks_of_inodes(sb, 2, 2 + sbi->s_imap_blocks + sbi->s_zmap_blocks, minix_free_block);
 
 	// Get buffer_head to snapshot
 	read_block = get_block_for_snapshot_slot(sb, slot);
@@ -287,7 +265,7 @@ long rollback_snapshot(struct super_block *sb, char *name) {
 	debug_log("\tCopied blocks until block %ld\n", read_block);
 
 	// Increase refcount for current content
-	do_for_blocks_of_inodes(sb, 2, 2 + sbi->s_imap_blocks + sbi->s_zmap_blocks, increment_refcount_for_blocks_of_inode);
+	do_for_blocks_of_inodes(sb, 2, 2 + sbi->s_imap_blocks + sbi->s_zmap_blocks, (void(*)(struct super_block*, size_t))increment_refcount_snapshot_callback);
 
 	return 0;
 }
@@ -310,7 +288,7 @@ long remove_snapshot(struct super_block *sb, char *name) {
 	snapshot_block = get_block_for_snapshot_slot(sb, slot);
 
 	// Remove snapshot content
-	do_for_blocks_of_inodes(sb, snapshot_block, snapshot_block + sbi->s_imap_blocks, free_blocks_of_inode);
+	do_for_blocks_of_inodes(sb, snapshot_block, snapshot_block + sbi->s_imap_blocks, minix_free_block);
 
 	// Remove snapshot name
 	write_snapshot_name(sb, slot, "");

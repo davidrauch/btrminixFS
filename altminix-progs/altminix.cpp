@@ -99,7 +99,7 @@ int main(int argc, char * argv[]) {
     }
 
     std::string device_path = get_device_path(volume_path);
-    if(device_path.length() ==0) {
+    if(device_path.length() == 0) {
         source_volume_invalid();
     }
 

@@ -101,7 +101,7 @@ static int alloc_branch(struct inode *inode,
 	for (i = 1; i < n; i++)
 		bforget(branch[i].bh);
 	for (i = 0; i < n; i++)
-		minix_free_block(inode, block_to_cpu(branch[i].key));
+		minix_free_block(inode->i_sb, block_to_cpu(branch[i].key));
 	return -ENOSPC;
 }
 
@@ -138,7 +138,7 @@ changed:
 	for (i = 1; i < num; i++)
 		bforget(where[i].bh);
 	for (i = 0; i < num; i++)
-		minix_free_block(inode, block_to_cpu(where[i].key));
+		minix_free_block(inode->i_sb, block_to_cpu(where[i].key));
 	return -EAGAIN;
 }
 
@@ -261,7 +261,7 @@ static inline void free_data(struct inode *inode, block_t *p, block_t *q)
 		nr = block_to_cpu(*p);
 		if (nr) {
 			*p = 0;
-			minix_free_block(inode, nr);
+			minix_free_block(inode->i_sb, nr);
 		}
 	}
 }
@@ -283,7 +283,7 @@ static void free_branches(struct inode *inode, block_t *p, block_t *q, int depth
 			free_branches(inode, (block_t*)bh->b_data,
 				      block_end(bh), depth);
 			bforget(bh);
-			minix_free_block(inode, nr);
+			minix_free_block(inode->i_sb, nr);
 			mark_inode_dirty(inode);
 		}
 	} else
