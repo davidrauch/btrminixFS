@@ -5,7 +5,7 @@
 #include "../minix/ioctl_basic.h"
 
 void params_invalid() {
-    std::cout << "Usage: altminix snapshot (create|remove|rollback|list) volume_path [snapshot_name]" << std::endl;
+    std::cout << "Usage: btrminix snapshot (create|remove|rollback|list) volume_path [snapshot_name]" << std::endl;
     exit(EXIT_FAILURE);
 }
 
