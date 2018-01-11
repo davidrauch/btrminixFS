@@ -3,13 +3,27 @@
 #include "minix.h"
 #include "ioctl_basic.h"
 
+void do_for_blocks_in_indirect_block(struct super_block *sb, size_t block_no, void(*callback)(struct super_block*, size_t)) {
+	struct buffer_head *bh = sb_bread(sb, block_no);
+	uint32_t* block_refs = (uint32_t*)bh->b_data;
+	size_t i;
+
+	for(i = 0; i < MINIX_BLOCK_REFS_PER_BLOCK; i++) {
+		if(block_refs[i] == 0) {
+			break;
+		}
+
+		callback(sb, block_refs[i]);
+	}
+}
+
 
 // Calls a callback for all blocks of the given inode
 void do_for_blocks_of_inode(struct super_block *sb, struct minix2_inode *inode, void(*callback)(struct super_block*, size_t)) {
 	size_t i;
 	//struct minix_sb_info *sbi = minix_sb(sb);
 
-	// Free direct data blocks
+	// Direct data blocks
 	for(i = 0; i < INDIRECT_BLOCK_INDEX; i++) {
 		if(inode->i_zone[i] == 0) {
 			break;
@@ -18,6 +32,29 @@ void do_for_blocks_of_inode(struct super_block *sb, struct minix2_inode *inode, 
 		debug_log("\tInode contains data block %d", inode->i_zone[i]);
 
 		callback(sb, inode->i_zone[i]);
+	}
+
+	// Single indirect blocks
+	if(inode->i_zone[INDIRECT_BLOCK_INDEX] != 0) {
+		callback(sb, inode->i_zone[INDIRECT_BLOCK_INDEX]);
+		do_for_blocks_in_indirect_block(sb, inode->i_zone[INDIRECT_BLOCK_INDEX], callback);
+
+		// Single indirect blocks
+		if(inode->i_zone[DOUBLE_INDIRECT_BLOCK_INDEX] != 0) {
+			struct buffer_head *bh = sb_bread(sb, inode->i_zone[DOUBLE_INDIRECT_BLOCK_INDEX]);
+			uint32_t* block_refs = (uint32_t*)bh->b_data;
+			
+			callback(sb, inode->i_zone[DOUBLE_INDIRECT_BLOCK_INDEX]);
+
+			for(i = 0; i < MINIX_BLOCK_REFS_PER_BLOCK; i++) {
+				if(block_refs[i] == 0) {
+					break;
+				}
+
+				callback(sb, block_refs[i]);
+				do_for_blocks_in_indirect_block(sb, block_refs[i], callback);
+			}
+		}
 	}
 }
 

@@ -26,6 +26,7 @@
 #define MINIX_ERROR_FS		0x0002		/* fs has errors. */
 
 #define MINIX_INODES_PER_BLOCK ((BLOCK_SIZE)/(sizeof (struct minix_inode)))
+#define MINIX_BLOCK_REFS_PER_BLOCK ((BLOCK_SIZE)/(sizeof (uint32_t)))
 
 #define NUM_ZONES_IN_INODE			9
 #define INDIRECT_BLOCK_INDEX		7
