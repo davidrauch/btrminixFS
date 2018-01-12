@@ -17,7 +17,6 @@ extern char *super_block_buffer;
 
 #define BITS_PER_BLOCK (MINIX_BLOCK_SIZE << 3)
 
-#define SNAPSHOT_NUM_SLOTS 			10 // TODO: Make this dynamic
 #define SNAPSHOT_BLOCKS_FOR_NAMES	1
 
 #define UPPER(size,n) ((size+((n)-1))/(n))
@@ -116,16 +115,6 @@ static inline size_t get_refcount_table_size(void)
 static inline size_t get_refcount_table_blocks(void)
 {
 	return UPPER(get_refcount_table_size(), MINIX_BLOCK_SIZE);
-}
-
-static inline size_t get_snapshot_blocks(void)
-{
-	return SNAPSHOT_BLOCKS_FOR_NAMES + SNAPSHOT_NUM_SLOTS * (get_nimaps() + inode_blocks());
-}
-
-static inline off_t first_zone_data(void)
-{
-	return 2 + get_nimaps() + get_nzmaps() + inode_blocks() + get_refcount_table_blocks() + get_snapshot_blocks();
 }
 
 static inline size_t get_inode_buffer_size(void)

@@ -1,5 +1,5 @@
 # Ignore compiled and generated files
-altminix
+btrminix
 
 # CMake
 CMakeCache.txt

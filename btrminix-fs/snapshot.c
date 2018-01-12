@@ -115,7 +115,7 @@ int get_free_snapshot_slot(struct super_block *sb) {
 	size_t i;
 
 	// Read snapshot names
-	for(i = 0; i < SNAPSHOT_NUM_SLOTS; i++) {
+	for(i = 0; i < minix_sb(sb)->s_snapshots_slots; i++) {
 		// Check if the current slot is free
 		if(snapshot_names_bh->b_data[i*SNAPSHOT_NAME_LENGTH] == '\0') {
 			return i;
@@ -155,7 +155,7 @@ int get_slot_of_snapshot_name(struct super_block *sb, char *name) {
 	}
 
 	// Read snapshot names
-	for(i = 0; i < SNAPSHOT_NUM_SLOTS; i++) {
+	for(i = 0; i < minix_sb(sb)->s_snapshots_slots; i++) {
 		// Check if the current slot is free
 		if(strcmp(snapshot_names_bh->b_data + (i * SNAPSHOT_NAME_LENGTH), name) == 0) {
 			debug_log("Found snapshot %s in slot %d", name, i);
@@ -352,7 +352,7 @@ long list_snapshots(struct super_block *sb, char *names) {
 	size_t i;
 	char *name;
 
-	for(i = 0; i < SNAPSHOT_NUM_SLOTS; i++) {
+	for(i = 0; i < minix_sb(sb)->s_snapshots_slots; i++) {
 		name = get_snapshot_name_of_slot(sb, i);
 		strncpy(names + i * SNAPSHOT_NAME_LENGTH, name, SNAPSHOT_NAME_LENGTH);
 	}

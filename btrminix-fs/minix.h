@@ -44,6 +44,7 @@ struct minix_sb_info {
 	__u32 s_refcount_table_blocks;
 	struct buffer_head ** s_refcount_table;
 	unsigned long s_snapshots_start_block;
+	unsigned long s_snapshots_slots;
 };
 
 extern struct inode *minix_iget(struct super_block *, unsigned long);

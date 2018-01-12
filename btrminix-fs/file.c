@@ -98,12 +98,13 @@ static int minix_clone_file_range(struct file *src_file, loff_t off,
 long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg) {
 	long ret = 0;
 	struct super_block *sb = filp->f_inode->i_sb;
+	struct minix_sb_info *sbi = minix_sb(sb);
 	char __user *snapshot_name_userspace;
 	char __user *snapshot_struct_userspace;
 	char snapshot_name[SNAPSHOT_NAME_LENGTH];
 	struct snapshot_slot snapshot_struct;
 	int snapshot_slot;
-	char names[SNAPSHOT_NUM_SLOTS * SNAPSHOT_NAME_LENGTH];
+	char names[sbi->s_snapshots_slots * SNAPSHOT_NAME_LENGTH];
 
 	switch(cmd) {
 		case IOCTL_BTRMINIX_CREATE_SNAPSHOT:
@@ -126,12 +127,20 @@ long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg) {
 			copy_from_user(&snapshot_struct, snapshot_struct_userspace, sizeof(snapshot_struct));
 			copy_from_user(snapshot_name, snapshot_struct.name, SNAPSHOT_NAME_LENGTH);
 			snapshot_slot = slot_of_snapshot(sb, snapshot_name);
-			copy_to_user(snapshot_struct.slot, &snapshot_slot, sizeof(int));
-			ret = 0;
+			if(snapshot_slot > 0) {
+				copy_to_user(snapshot_struct.slot, &snapshot_slot, sizeof(int));
+				ret = 0;
+			} else {
+				ret = snapshot_slot;
+			}
 			break;
 		case IOCTL_BTRMINIX_LIST_SNAPSHOTS:
 			ret = list_snapshots(sb, names);
-			copy_to_user((char __user*) arg, names, SNAPSHOT_NUM_SLOTS * SNAPSHOT_NAME_LENGTH);
+			copy_to_user((char __user*) arg, names, sbi->s_snapshots_slots * SNAPSHOT_NAME_LENGTH);
+			break;
+		case IOCTL_BTRMINIX_SNAPSHOT_SLOTS:
+			copy_to_user((char __user*) arg, &sbi->s_snapshots_slots, sizeof(sbi->s_snapshots_slots));
+			ret = 0;
 			break;
 	} 
 

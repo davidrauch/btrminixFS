@@ -83,7 +83,7 @@
 
 #define MINIX_ROOT_INO 1
 #define MINIX_BAD_INO 2
-#define MINIX_ALTMINIX_INO 3
+#define MINIX_BTRMINIX_INO 3
 
 #define TEST_BUFFER_BLOCKS 16
 #define MAX_GOOD_BLOCKS 512
@@ -91,6 +91,7 @@
 #define MINIX_MAX_INODES 65535
 
 #define DEFAULT_FS_VERSION 3
+#define MAX_NUM_SNAPSHOT_SLOTS 128
 
 /*
  * Global variables used in minix_programs.h inline functions
@@ -115,6 +116,7 @@ struct fs_control {
 	int fs_magic;			/* file system magic number */
 	unsigned int
 	 check_blocks:1;		/* check for bad blocks */
+	uint16_t fs_snapshot_slots;
 };
 
 static char root_block[MINIX_BLOCK_SIZE];
@@ -147,19 +149,23 @@ static inline void unmark_zone(unsigned int x) {
 	refcount_table[zone_index] = 0;
 }
 
+static inline size_t get_snapshot_blocks(const struct fs_control *ctl)
+{
+	return SNAPSHOT_BLOCKS_FOR_NAMES + ctl->fs_snapshot_slots * (get_nimaps() + inode_blocks());
+}
+
+static inline off_t first_zone_data(const struct fs_control *ctl)
+{
+	return 2 + get_nimaps() + get_nzmaps() + inode_blocks() + get_refcount_table_blocks() + get_snapshot_blocks(ctl);
+}
+
 static void __attribute__((__noreturn__)) usage(void)
 {
 	FILE *out = stdout;
 	fputs(USAGE_HEADER, out);
 	fprintf(out, _(" %s [options] /dev/name [blocks]\n"), program_invocation_short_name);
 	fputs(USAGE_OPTIONS, out);
-	fputs(_(" -1                      use Minix version 1\n"), out);
-	fputs(_(" -2, -v                  use Minix version 2\n"), out);
-	fputs(_(" -3                      use Minix version 3\n"), out);
-	fputs(_(" -n, --namelength <num>  maximum length of filenames\n"), out);
-	fputs(_(" -i, --inodes <num>      number of inodes for the filesystem\n"), out);
-	fputs(_(" -c, --check             check the device for bad blocks\n"), out);
-	fputs(_(" -l, --badblocks <file>  list of bad blocks from file\n"), out);
+	fputs(_(" -s <num>                number of snapshot slots (<= 128)\n"), out);
 	fputs(USAGE_SEPARATOR, out);
 	printf(USAGE_HELP_OPTIONS(25));
 	printf(USAGE_MAN_TAIL("mkfs.minix(8)"));
@@ -471,10 +477,10 @@ static void make_root_inode_v2_v3 (struct fs_control *ctl) {
 	write_block (ctl, inode->i_zone[0], root_block);
 }
 
-static void make_altminix_inode(void) {
-	struct minix2_inode *inode = &Inode2[MINIX_ALTMINIX_INO];
+static void make_btrminix_inode(void) {
+	struct minix2_inode *inode = &Inode2[MINIX_BTRMINIX_INO];
 
-	mark_inode(MINIX_ALTMINIX_INO);
+	mark_inode(MINIX_BTRMINIX_INO);
 	inode->i_nlinks = 1;
 	inode->i_atime = inode->i_mtime = inode->i_ctime = mkfs_minix_time(NULL);
 	inode->i_size = 0;
@@ -496,7 +502,7 @@ static void make_root_inode(struct fs_control *ctl)
 		strcpy(tmp + 4, "..");
 		tmp += ctl->fs_dirsize;
 		*(uint32_t *) tmp = 3;
-		strcpy(tmp + 4, ".altminix");
+		strcpy(tmp + 4, ".btrminix");
 		tmp += ctl->fs_dirsize;
 		*(uint32_t *) tmp = 2;
 		strcpy(tmp + 4, ".badblocks");
@@ -554,7 +560,7 @@ static void super_set_map_blocks(const struct fs_control *ctl, unsigned long ino
 		Super3.s_imap_blocks = UPPER(inodes + 1, BITS_PER_BLOCK);
 		Super3.s_zmap_blocks = UPPER(ctl->fs_blocks - (1 + get_nimaps() + inode_blocks()),
 					     BITS_PER_BLOCK + 1);
-		Super3.s_firstdatazone = first_zone_data();
+		Super3.s_firstdatazone = first_zone_data(ctl);
 		Super3.s_inodes_blocks = UPPER(inodes * sizeof(struct minix2_inode), MINIX_BLOCK_SIZE);
 		Super3.s_refcount_table_blocks = get_refcount_table_blocks();
 		break;
@@ -562,7 +568,7 @@ static void super_set_map_blocks(const struct fs_control *ctl, unsigned long ino
 		Super.s_imap_blocks = UPPER(inodes + 1, BITS_PER_BLOCK);
 		Super.s_zmap_blocks = UPPER(ctl->fs_blocks - (1 + get_nimaps() + inode_blocks()),
 					     BITS_PER_BLOCK + 1);
-		Super.s_firstdatazone = first_zone_data();
+		Super.s_firstdatazone = first_zone_data(ctl);
 		break;
 	}
 }
@@ -627,11 +633,11 @@ static void setup_tables(const struct fs_control *ctl) {
 		Super.s_ninodes = inodes;
 	}
 	super_set_map_blocks(ctl, inodes);
-	if (MINIX_MAX_INODES < first_zone_data())
+	if (MINIX_MAX_INODES < first_zone_data(ctl))
 		errx(MKFS_EX_ERROR,
 		     _("First data block at %jd, which is too far (max %d).\n"
 		       "Try specifying fewer inodes by passing --inodes <num>"),
-		     (intmax_t)first_zone_data(),
+		     (intmax_t)first_zone_data(ctl),
 		     MINIX_MAX_INODES);
 	imaps = get_nimaps();
 	zmaps = get_nzmaps();
@@ -668,8 +674,8 @@ static void setup_tables(const struct fs_control *ctl) {
 	printf(P_("%lu inode\n", "%lu inodes\n", inodes), inodes);
 	printf(P_("%lu block\n", "%lu blocks\n", zones), zones);
 	printf(_("Firstdatazone=%jd (%jd)\n"),
-		(intmax_t)get_first_zone(), (intmax_t)first_zone_data());
-	printf("Reserved %ld blocks for snapshots\n", get_snapshot_blocks());
+		(intmax_t)get_first_zone(), (intmax_t)first_zone_data(ctl));
+	printf("Reserved %ld blocks for %d snapshots\n", get_snapshot_blocks(ctl), ctl->fs_snapshot_slots);
 	printf(_("Zonesize=%zu\n"), (size_t) MINIX_BLOCK_SIZE << get_zone_size());
 	printf(_("Maxsize=%zu\n\n"),get_max_size());
 }
@@ -819,22 +825,8 @@ static void determine_device_blocks(struct fs_control *ctl, const struct stat *s
 
 static void check_user_instructions(struct fs_control *ctl)
 {
-	switch (fs_version) {
-	case 1:
-	case 2:
-		if (ctl->fs_namelen == 14 || ctl->fs_namelen == 30)
-			ctl->fs_dirsize = ctl->fs_namelen + 2;
-		else
-			errx(MKFS_EX_ERROR, _("unsupported name length: %d"), ctl->fs_namelen);
-		break;
-	case 3:
-		if (ctl->fs_namelen == 60)
-			ctl->fs_dirsize = ctl->fs_namelen + 4;
-		else
-			errx(MKFS_EX_ERROR, _("unsupported name length: %d"), ctl->fs_namelen);
-		break;
-	default:
-		errx(MKFS_EX_ERROR, _("unsupported minix file system version: %d"), fs_version);
+	if(ctl->fs_snapshot_slots > MAX_NUM_SNAPSHOT_SLOTS) {
+		errx(MKFS_EX_ERROR, _("number of snapshot slots too high: %d > %d"), ctl->fs_snapshot_slots, MAX_NUM_SNAPSHOT_SLOTS);
 	}
 	ctl->fs_magic = find_super_magic(ctl);
 }
@@ -842,18 +834,13 @@ static void check_user_instructions(struct fs_control *ctl)
 int main(int argc, char ** argv)
 {
 	struct fs_control ctl = {
-		.fs_namelen = 30,	/* keep in sync with DEFAULT_FS_VERSION */
-		0
+		.fs_namelen = 60,
+		.fs_snapshot_slots = 10,
 	};
 	int i;
 	struct stat statbuf;
 	char * listfile = NULL;
 	static const struct option longopts[] = {
-		{"namelength", required_argument, NULL, 'n'},
-		{"inodes", required_argument, NULL, 'i'},
-		{"check", no_argument, NULL, 'c'},
-		{"badblocks", required_argument, NULL, 'l'},
-		{"version", no_argument, NULL, 'V'},
 		{"help", no_argument, NULL, 'h'},
 		{NULL, 0, NULL, 0}
 	};
@@ -865,38 +852,12 @@ int main(int argc, char ** argv)
 
 	strutils_set_exitcode(MKFS_EX_USAGE);
 
-	while ((i = getopt_long(argc, argv, "1v23n:i:cl:Vh", longopts, NULL)) != -1)
+	while ((i = getopt_long(argc, argv, "s:h", longopts, NULL)) != -1)
 		switch (i) {
-		case '1':
-			fs_version = 1;
+		case 's':
+			ctl.fs_snapshot_slots = strtou16_or_err(optarg,
+					_("failed to parse number of snapshot slots"));
 			break;
-		case 'v': /* kept for backwards compatibility */
-			warnx(_("-v is ambiguous, use '-2' instead"));
-			/* fallthrough */
-		case '2':
-			fs_version = 2;
-			break;
-		case '3':
-			fs_version = 3;
-			ctl.fs_namelen = 60;
-			break;
-		case 'n':
-			ctl.fs_namelen = strtou16_or_err(optarg,
-					_("failed to parse maximum length of filenames"));
-			break;
-		case 'i':
-			ctl.fs_inodes = strtoul_or_err(optarg,
-					_("failed to parse number of inodes"));
-			break;
-		case 'c':
-			ctl.check_blocks = 1;
-			break;
-		case 'l':
-			listfile = optarg;
-			break;
-		case 'V':
-			printf(UTIL_LINUX_VERSION);
-			return MKFS_EX_OK;
 		case 'h':
 			usage();
 		default:
@@ -934,7 +895,7 @@ int main(int argc, char ** argv)
 
 	make_root_inode(&ctl);
 	make_bad_inode(&ctl);
-	make_altminix_inode();
+	make_btrminix_inode();
 
 	mark_good_blocks(&ctl);
 	write_tables(&ctl);

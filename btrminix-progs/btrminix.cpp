@@ -79,7 +79,7 @@ void remount(std::string volume_path, std::string device_path) {
     system(umount_cmd.str().c_str());
 
     std::ostringstream mount_cmd;
-    mount_cmd << "mount -t altminix " << device_path << " " << volume_path;
+    mount_cmd << "mount -t btrminix " << device_path << " " << volume_path;
     system(mount_cmd.str().c_str());
 }
 
@@ -91,7 +91,7 @@ int main(int argc, char * argv[]) {
 
     // At this point we know we have valid params
     std::string volume_path(argv[3]);
-    std::string snapshot_iface_file(join_paths(volume_path, std::string(".altminix")));
+    std::string snapshot_iface_file(join_paths(volume_path, std::string(".btrminix")));
 
     // Check source volume
     if (!stdfs::is_directory(volume_path) || !stdfs::exists(snapshot_iface_file)) {

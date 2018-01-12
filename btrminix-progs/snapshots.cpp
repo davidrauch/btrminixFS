@@ -8,7 +8,6 @@
 #include "../btrminix-fs/ioctl_basic.h"
 
 #define SNAPSHOT_NAME_LENGTH    32
-#define SNAPSHOT_NUM_SLOTS      10
 
 void create_snapshot(int ioctl_fd, char *snapshot_name) {
     // Copy name to fixed length
@@ -77,14 +76,21 @@ int slot_of_snapshot(int ioctl_fd, char *snapshot_name) {
 }
 
 void list_snapshots(int ioctl_fd) {
-    // Call IOCTL
-    char names[SNAPSHOT_NAME_LENGTH * SNAPSHOT_NUM_SLOTS];
-    int ioctl_ret = ioctl(ioctl_fd, IOCTL_BTRMINIX_LIST_SNAPSHOTS, &names);
+    // Get number of slots
+    int slots = 0;
+    int ioctl_ret = ioctl(ioctl_fd, IOCTL_BTRMINIX_SNAPSHOT_SLOTS, &slots);
     if(ioctl_ret != 0) {
         ioctl_error(errno);
     }
 
-    for(int i = 0; i < SNAPSHOT_NUM_SLOTS; i++) {
+    // Get names
+    char names[SNAPSHOT_NAME_LENGTH * slots];
+    ioctl_ret = ioctl(ioctl_fd, IOCTL_BTRMINIX_LIST_SNAPSHOTS, &names);
+    if(ioctl_ret != 0) {
+        ioctl_error(errno);
+    }
+
+    for(int i = 0; i < slots; i++) {
         std::cout << i << ": " << names+(i*SNAPSHOT_NAME_LENGTH) << std::endl;
     }
 }

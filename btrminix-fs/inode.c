@@ -252,7 +252,16 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
 		sbi->s_mount_state = MINIX_VALID_FS;
 		sbi->s_inodes_blocks = m3s->s_inodes_blocks;
 		sbi->s_refcount_table_blocks = m3s->s_refcount_table_blocks;
-		sbi->s_snapshots_start_block = 2 + sbi->s_imap_blocks + sbi->s_zmap_blocks + sbi->s_inodes_blocks + sbi->s_refcount_table_blocks;
+		sbi->s_snapshots_start_block =
+			2 +
+			sbi->s_imap_blocks +
+			sbi->s_zmap_blocks +
+			sbi->s_inodes_blocks +
+			sbi->s_refcount_table_blocks;
+		sbi->s_snapshots_slots =
+			(sbi->s_firstdatazone - sbi->s_snapshots_start_block - SNAPSHOT_BLOCKS_FOR_NAMES) / 
+			(sbi->s_imap_blocks + sbi->s_inodes_blocks);
+		debug_log("- snapshot slots is %ld\n", sbi->s_snapshots_slots);
 		debug_log("- blocksize is %d\n", m3s->s_blocksize);
 		sb_set_blocksize(s, m3s->s_blocksize);
 		s->s_max_links = MINIX2_LINK_MAX;
