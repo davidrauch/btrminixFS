@@ -23,3 +23,13 @@ std::string join_paths(std::string path1, std::string path2) {
     }
     return path1 + std::string("/") + path2;
 }
+
+std::string currentDateTime() {
+    time_t     now = time(0);
+    struct tm  tstruct;
+    char       buf[80];
+    tstruct = *localtime(&now);
+    strftime(buf, sizeof(buf), "%F_%H-%M-%S", &tstruct);
+
+    return buf;
+}

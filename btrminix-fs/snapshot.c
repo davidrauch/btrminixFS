@@ -138,7 +138,7 @@ void write_snapshot_name(struct super_block *sb, int slot, char *name) {
 		}
 	}
 
-	snapshot_names_bh->b_data[strlen(name)] = '\0';
+	snapshot_names_bh->b_data[(slot * SNAPSHOT_NAME_LENGTH) + strlen(name)] = '\0';
 
 	mark_buffer_dirty(snapshot_names_bh);
 	sync_dirty_buffer(snapshot_names_bh);
@@ -358,4 +358,19 @@ long list_snapshots(struct super_block *sb, char *names) {
 	}
 
 	return 0;
+}
+
+size_t count_snapshots(struct super_block *sb) {
+	size_t i;
+	size_t count = 0;
+	char *name;
+
+	for(i = 0; i < minix_sb(sb)->s_snapshots_slots; i++) {
+		name = get_snapshot_name_of_slot(sb, i);
+		if(strlen(name) != 0) {
+			count++;
+		}
+	}
+
+	return count;
 }

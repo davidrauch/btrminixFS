@@ -93,6 +93,7 @@ long rollback_snapshot(struct super_block *sb, char *name);
 long remove_snapshot(struct super_block *sb, char *name);
 long slot_of_snapshot(struct super_block *sb, char *name);
 long list_snapshots(struct super_block *sb, char* names);
+size_t count_snapshots(struct super_block *sb);
 
 extern const struct inode_operations minix_file_inode_operations;
 extern const struct inode_operations minix_dir_inode_operations;

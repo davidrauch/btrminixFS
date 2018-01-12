@@ -835,6 +835,7 @@ int main(int argc, char ** argv)
 {
 	struct fs_control ctl = {
 		.fs_namelen = 60,
+		.fs_dirsize = 64,
 		.fs_snapshot_slots = 10,
 	};
 	int i;
