@@ -53,16 +53,40 @@ def copy_file(src, dst):
 
 	return hashsum
 
+def alter_file_at(path, offset, bytes):
+	print '[+] Altering file ...'
+
+	with open(path, 'w') as f:
+		f.seek(offset)
+		f.write(bytes)
+
+	hashsum = md5sum(path)
+
+	print '\t path: {}'.format(path)
+	print '\t offset: {}'.format(offset)
+	print '\t new hash: {}'.format(hashsum)
+
+	return hashsum
+
 def fs_usage(path):
 	call(['df', path, '-H'])
 
-def test_create_copy_compare(size):
+def test_create_copy_alter_compare(size):
 	h1 = create_random_file('testfile1', size)
 	h2 = copy_file('testfile1', 'testfile2')
 	if h1 == h2:
 		print '[+] Files are identical!'
 	else:
 		print '[-] Files are different!'
+
+	new_byte = urandom(1)
+	h1 = alter_file_at('testfile1', size - 123, new_byte)
+	h2 = md5sum('testfile2')
+
+	if h1 != h2:
+		print '[+] Files are different now!'
+	else:
+		print '[-] Files are still identical!'
 
 	remove('testfile1')
 	remove('testfile2')
@@ -71,19 +95,19 @@ if __name__ == '__main__':
 	fs_usage('.')
 
 	print '--- Directly adressed -----'
-	test_create_copy_compare(20*K)
+	test_create_copy_alter_compare(20*K)
 	print '---------------------------'
 
 	fs_usage('.')
 
 	print '--- Indirectly adressed ---'
-	test_create_copy_compare(3*M)
+	test_create_copy_alter_compare(3*M)
 	print '---------------------------'
 
 	fs_usage('.')
 
 	print '--- Double-ind. adressed --'
-	test_create_copy_compare(1*G)
+	test_create_copy_alter_compare(1*G)
 	print '---------------------------'
 
 	fs_usage('.')
