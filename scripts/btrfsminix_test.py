@@ -68,6 +68,13 @@ def alter_file_at(path, offset, bytes):
 
 	return hashsum
 
+def bytes_from_file_at(path, offset, length):
+	with open(path, 'r') as f:
+		f.seek(offset)
+		bytes = f.read(length)
+
+	return bytes
+
 def fs_usage(path):
 	call(['df', path, '-H'])
 
@@ -80,16 +87,26 @@ def test_create_copy_alter_compare(size):
 		print '[-] Files are different!'
 
 	new_byte = urandom(1)
-	h1 = alter_file_at('testfile1', size - 123, new_byte)
-	h2 = md5sum('testfile2')
+	alter_file_at('testfile1', size - 123, new_byte)
 
-	if h1 != h2:
-		print '[+] Files are different now!'
+	b1 = bytes_from_file_at('testfile1', size - 123, 1)
+	b2 = bytes_from_file_at('testfile2', size - 123, 1)
+
+	if b1 != b2:
+		print '[+] Altered bytes are different now!'
 	else:
-		print '[-] Files are still identical!'
+		print '[-] Altered bytes are still identical!'
 
-	remove('testfile1')
-	remove('testfile2')
+	b1 = bytes_from_file_at('testfile1', size - 142, 1)
+	b2 = bytes_from_file_at('testfile2', size - 142, 1)	
+
+	if b1 == b2:
+		print '[+] Other sample bytes are identical!'
+	else:
+		print '[-] Other sample bytes are different now!'
+
+	#remove('testfile1')
+	#remove('testfile2')
 
 if __name__ == '__main__':
 	fs_usage('.')
@@ -109,5 +126,6 @@ if __name__ == '__main__':
 	print '--- Double-ind. adressed --'
 	test_create_copy_alter_compare(1*G)
 	print '---------------------------'
+
 
 	fs_usage('.')
