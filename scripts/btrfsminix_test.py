@@ -56,7 +56,7 @@ def copy_file(src, dst):
 def alter_file_at(path, offset, bytes):
 	print '[+] Altering file ...'
 
-	with open(path, 'w') as f:
+	with open(path, 'r+') as f:
 		f.seek(offset)
 		f.write(bytes)
 
@@ -122,10 +122,10 @@ if __name__ == '__main__':
 	print '---------------------------'
 
 	fs_usage('.')
-
+	"""
 	print '--- Double-ind. adressed --'
 	test_create_copy_alter_compare(1*G)
 	print '---------------------------'
 
-
 	fs_usage('.')
+	"""
