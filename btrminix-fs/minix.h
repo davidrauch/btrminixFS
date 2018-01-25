@@ -121,9 +121,15 @@ static inline unsigned minix_blocks_needed(unsigned bits, unsigned blocksize)
 }
 
 // For debugging
-#define PRINT_TO_KERNEL_LOG	true
+#define PRINT_TO_KERNEL_LOG	0
 
-static inline void debug_log(const char* format, ...) {
+#if PRINT_TO_KERNEL_LOG == 1
+	#define debug_log(...) _debug_log(__VA_ARGS__)
+#else
+	#define debug_log(...)
+#endif
+
+static inline void _debug_log(const char* format, ...) {
 	// Declarations
 	va_list arg;
 	const char *prefix = "BTRMINIX: ";
