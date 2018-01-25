@@ -297,8 +297,8 @@ static int minix_rename(struct inode * old_dir, struct dentry *old_dentry,
 
 	PRINT_FUNC();
 
-	cow_dir(old_inode);
-	cow_dir(new_inode);
+	cow_dir(old_dir);
+	cow_dir(new_dir);
 
 	if (flags & ~RENAME_NOREPLACE)
 		return -EINVAL;
