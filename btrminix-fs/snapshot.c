@@ -39,7 +39,7 @@ void do_for_blocks_of_inode(struct super_block *sb, struct minix2_inode *inode, 
 		callback(sb, inode->i_zone[INDIRECT_BLOCK_INDEX]);
 		do_for_blocks_in_indirect_block(sb, inode->i_zone[INDIRECT_BLOCK_INDEX], callback);
 
-		// Single indirect blocks
+		// Double indirect blocks
 		if(inode->i_zone[DOUBLE_INDIRECT_BLOCK_INDEX] != 0) {
 			struct buffer_head *bh = sb_bread(sb, inode->i_zone[DOUBLE_INDIRECT_BLOCK_INDEX]);
 			uint32_t* block_refs = (uint32_t*)bh->b_data;

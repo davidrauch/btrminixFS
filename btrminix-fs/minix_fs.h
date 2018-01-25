@@ -35,6 +35,8 @@
 #define SNAPSHOT_BLOCKS_FOR_NAMES	1
 #define SNAPSHOT_NAME_LENGTH		32
 
+#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
+
 /*
  * This is the original minix inode layout on disk.
  * Note the 8-bit gid and atime and ctime.

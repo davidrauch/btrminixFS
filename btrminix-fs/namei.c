@@ -10,59 +10,54 @@
 #include <linux/highmem.h>
 #include <linux/swap.h>
 
-void cow_dir(struct inode *dir) {
-	struct minix_inode_info *minix_inode = minix_i(dir);
-	struct minix_sb_info *sbi = minix_sb(dir->i_sb);
-	size_t i, data_zone_index, new_block;
-	struct buffer_head *read_bh, *write_bh;
+void cow_dir(struct inode *inode) {
+	struct minix_inode_info *minix_inode = minix_i(inode);
+	struct minix_sb_info *sbi = minix_sb(inode->i_sb);
+	size_t i;
 	unsigned long npages;
 	struct page *page = NULL;
 	bool had_change = false;
 
-	// Clone the inodes pages if needed
-	// Direct blocks: assign to target and increase refcount on blocks
-	for (i = 0; i < INDIRECT_BLOCK_INDEX; i++) {
+	// Directly referenced
+	//debug_log("== %d, %d, %d, %d ==", pos, len, first_inode_block_index, last_inode_block_index);
+	//debug_log("Current_inode_block_indes is %d", current_inode_block_index);
+	for(i = 0; i < INDIRECT_BLOCK_INDEX; i++) {
+		// Check if block is not yet allocated
+		// All following blocks will also be unallocated
 		if(minix_inode->u.i2_data[i] == 0) {
 			break;
 		}
 
-		// Check refcount of this data block
-		// Inode contains physical block number!
-		data_zone_index = data_zone_index_for_zone_number(sbi, minix_inode->u.i2_data[i]);
-		if(get_refcount(sbi, data_zone_index) > 1) {
-			// Assign new block
-			new_block = minix_new_block(dir);
-			if (new_block != 0) {
-				// Copy content
-				read_bh = sb_bread(dir->i_sb, minix_inode->u.i2_data[i]);
-				write_bh = sb_bread(dir->i_sb, new_block);
-				memcpy(write_bh->b_data, read_bh->b_data, write_bh->b_size);
-				mark_buffer_dirty(write_bh);
-				sync_dirty_buffer(write_bh);
-				brelse(read_bh);
-				brelse(write_bh);
+		// CoW block if needed
+		cow_block(sbi, inode, &minix_inode->u.i2_data[i], true);
+		had_change = true;
+	}
 
-				// Decrement refcount on old block
-				decrement_refcount(sbi, data_zone_index);
+	// Single indirect
+	//debug_log("Current_inode_block_indes is %d (%d, %d)", current_inode_block_index, last_inode_block_index, n_blockrefs_in_inode + n_blockrefs_in_block);
+	if(minix_inode->u.i2_data[INDIRECT_BLOCK_INDEX] != 0) {
+		// CoW indirect block if needed
+		cow_indirect_block(inode, &minix_inode->u.i2_data[INDIRECT_BLOCK_INDEX], &i, true);
+		had_change = true;
+	}
 
-				// Set new block
-				minix_inode->u.i2_data[i] = new_block;
+	// Double indirect
+	//debug_log("Current_inode_block_indes is %d", current_inode_block_index);
+	if(minix_inode->u.i2_data[DOUBLE_INDIRECT_BLOCK_INDEX] != 0) {
 
-				had_change = true;
-			} else {
-				debug_log("ERROR: Could not get new block for CoW");
-			}
-		}
+		// CoW indirect block if needed
+		cow_double_indirect_block(inode, &minix_inode->u.i2_data[DOUBLE_INDIRECT_BLOCK_INDEX], &i, true);
+		had_change = true;
 	}
 
 	if (had_change) {
-		mark_inode_dirty(dir);
-		write_inode_now(dir, 1);
+		mark_inode_dirty(inode);
+		write_inode_now(inode, 1);
 
 		// Remove all pages of the directory entry from the cache
-		npages = dir_pages(dir);
+		npages = dir_pages(inode);
 		for(i = 0; i < npages; i++) {
-			page = dir_get_page(dir, i);
+			page = dir_get_page(inode, i);
 			lock_page(page);
 			delete_from_page_cache(page);
 			unlock_page(page);

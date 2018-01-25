@@ -87,6 +87,11 @@ extern inline uint32_t decrement_refcount(struct minix_sb_info *, size_t);
 extern inline uint32_t data_zone_index_for_zone_number(struct minix_sb_info *, size_t);
 extern void increment_refcounts_on_indirect_block(struct super_block *, uint32_t);
 
+extern inline uint32_t deep_copy_block(struct inode *inode, uint32_t src_block_index);
+extern inline void cow_block(struct minix_sb_info *sbi, struct inode *inode, uint32_t *block_index_ptr, bool deep_copy);
+extern inline void cow_indirect_block(struct inode *inode, uint32_t *block_index_ptr, size_t *block_counter, bool deep_copy);
+extern inline void cow_double_indirect_block(struct inode *inode, uint32_t *block_index_ptr, size_t *block_counter, bool deep_copy);
+
 // Snapshots
 long create_snapshot(struct super_block *sb, char *name);
 long rollback_snapshot(struct super_block *sb, char *name);

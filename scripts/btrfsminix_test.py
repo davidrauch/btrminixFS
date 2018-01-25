@@ -122,10 +122,9 @@ if __name__ == '__main__':
 	print '---------------------------'
 
 	fs_usage('.')
-	"""
+
 	print '--- Double-ind. adressed --'
-	test_create_copy_alter_compare(1*G)
+	test_create_copy_alter_compare(100*M)
 	print '---------------------------'
 
 	fs_usage('.')
-	"""
