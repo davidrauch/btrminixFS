@@ -1,0 +1,24 @@
+dbench version 4.00 - Copyright Andrew Tridgell 1999-2004
+
+Running for 60 seconds with load '/usr/share/dbench/client.txt' and minimum warmup 12 secs
+0 of 1 processes prepared for launch   0 sec
+1 of 1 processes prepared for launch   0 sec
+releasing clients
+
+ Operation      Count    AvgLat    MaxLat
+ ----------------------------------------
+ NTCreateX         84     0.028     0.080
+ Close             82     0.003     0.009
+ Unlink             2     3.421     6.827
+ Deltree            1     0.128     0.128
+ Mkdir              1     0.095     0.095
+ Qpathinfo          9     0.006     0.017
+ Qfileinfo         71     0.002     0.042
+ Qfsinfo           10     0.053     0.095
+ Sfileinfo          4     0.009     0.024
+ Find               9     0.031     0.118
+ WriteX           402     0.714    37.563
+ ReadX             28     0.002     0.009
+ Flush              6     2.720     6.890
+
+Throughput 0 MB/sec  1 clients  1 procs  max_latency=0.000 ms
