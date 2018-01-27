@@ -480,7 +480,6 @@ static void minix_write_failed(struct address_space *mapping, loff_t to)
 
 inline uint32_t deep_copy_block(struct inode *inode, uint32_t src_block_index) {
 	struct super_block *sb = inode->i_sb;
-	struct minix_sb_info *sbi = minix_sb(sb);
 
 	struct buffer_head *src_bh;
 	struct buffer_head *dst_bh;
@@ -507,9 +506,6 @@ inline uint32_t deep_copy_block(struct inode *inode, uint32_t src_block_index) {
 	memcpy(dst_bh->b_data, src_bh->b_data, dst_bh->b_size);
 	mark_buffer_dirty(dst_bh);
 	sync_dirty_buffer(dst_bh);
-
-	// Decrement refcount on old block
-	decrement_refcount(sbi, data_zone_index_for_zone_number(sbi, src_block_index));
 
 	return new_block;
 }
@@ -556,6 +552,9 @@ inline void cow_indirect_block(struct inode *inode, uint32_t *block_index_ptr, s
 		// Assign new block
 		uint32_t new_block = deep_copy_block(inode, *block_index_ptr);
 		if (new_block != 0) {
+			// Decrement refcount on old block
+			decrement_refcount(sbi, data_block_index);
+
 			// Set new block
 			*block_index_ptr = new_block;
 		} else {
@@ -592,7 +591,9 @@ inline void cow_double_indirect_block(struct inode *inode, uint32_t *block_index
 		// Assign new block
 		uint32_t new_block = deep_copy_block(inode, *block_index_ptr);
 		if (new_block != 0) {
-			//debug_log("Copied double indirect block from %d to %d", *block_index_ptr, new_block);
+			// Decrement refcount on old block
+			decrement_refcount(sbi, data_block_index);
+
 			// Set new block
 			*block_index_ptr = new_block;
 		} else {
@@ -653,6 +654,8 @@ static int minix_write_begin(struct file *file, struct address_space *mapping,
 	last_inode_block_index = (pos + len -1) / sb->s_blocksize;
 	current_inode_block_index = first_inode_block_index;
 
+	truncate_inode_pages_range(&inode->i_data, first_inode_block_index * sb->s_blocksize, (last_inode_block_index + 1) * sb->s_blocksize);
+
 	// Directly referenced
 	//debug_log("== %d, %d, %d, %d ==", pos, len, first_inode_block_index, last_inode_block_index);
 	//debug_log("Current_inode_block_indes is %d", current_inode_block_index);
@@ -666,7 +669,7 @@ static int minix_write_begin(struct file *file, struct address_space *mapping,
 		}
 
 		// CoW block if needed
-		cow_block(sbi, inode, &minix_inode->u.i2_data[current_inode_block_index], false);
+		cow_block(sbi, inode, &minix_inode->u.i2_data[current_inode_block_index], true);
 		had_change = true;
 	}
 
@@ -676,7 +679,7 @@ static int minix_write_begin(struct file *file, struct address_space *mapping,
 		minix_inode->u.i2_data[INDIRECT_BLOCK_INDEX] != 0) {
 
 		// CoW indirect block if needed
-		cow_indirect_block(inode, &minix_inode->u.i2_data[INDIRECT_BLOCK_INDEX], &current_inode_block_index, false);
+		cow_indirect_block(inode, &minix_inode->u.i2_data[INDIRECT_BLOCK_INDEX], &current_inode_block_index, true);
 		had_change = true;
 	}
 
@@ -686,7 +689,7 @@ static int minix_write_begin(struct file *file, struct address_space *mapping,
 		minix_inode->u.i2_data[DOUBLE_INDIRECT_BLOCK_INDEX] != 0) {
 		
 		// CoW indirect block if needed
-		cow_double_indirect_block(inode, &minix_inode->u.i2_data[DOUBLE_INDIRECT_BLOCK_INDEX], &current_inode_block_index, false);
+		cow_double_indirect_block(inode, &minix_inode->u.i2_data[DOUBLE_INDIRECT_BLOCK_INDEX], &current_inode_block_index, true);
 		had_change = true;
 	}
 
