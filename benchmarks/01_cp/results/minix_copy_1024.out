@@ -1,0 +1,14 @@
+
+ Performance counter stats for 'cp /tmp/testmount/test.dat /tmp/testmount/test_copy.dat' (1000 runs):
+
+          1.903248      task-clock (msec)         #    0.850 CPUs utilized            ( +-  0.48% )
+                 0      context-switches          #    0.120 K/sec                    ( +-  5.90% )
+                 0      cpu-migrations            #    0.000 K/sec                  
+               131      page-faults               #    0.069 M/sec                    ( +-  0.04% )
+   <not supported>      cycles                                                      
+   <not supported>      instructions                                                
+   <not supported>      branches                                                    
+   <not supported>      branch-misses                                               
+
+       0.002237887 seconds time elapsed                                          ( +-  0.48% )
+

@@ -1,0 +1,14 @@
+
+ Performance counter stats for 'cp --reflink /tmp/testmount/test.dat /tmp/testmount/test_copy.dat' (1000 runs):
+
+          0.697352      task-clock (msec)         #    0.708 CPUs utilized            ( +-  0.56% )
+                 0      context-switches          #    0.132 K/sec                    ( +- 10.17% )
+                 0      cpu-migrations            #    0.000 K/sec                  
+                98      page-faults               #    0.141 M/sec                    ( +-  0.06% )
+   <not supported>      cycles                                                      
+   <not supported>      instructions                                                
+   <not supported>      branches                                                    
+   <not supported>      branch-misses                                               
+
+       0.000984828 seconds time elapsed                                          ( +-  0.55% )
+
