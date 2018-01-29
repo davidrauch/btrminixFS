@@ -1,3 +1,5 @@
-# Filesystems Project Seminar 2017 - Back to the Future
+# btrminix
 
-The goal of this project is to implement some modern features in older filesystems.
+A backwards-compatible implementation of CoW and snapshots for MinixFS 3.
+
+@ Filesystems Project Seminar, WS 2017/18, HPI
