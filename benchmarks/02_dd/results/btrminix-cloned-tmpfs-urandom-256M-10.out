@@ -1,0 +1,176 @@
+256+0 records in
+256+0 records out
+268435456 bytes (268 MB, 256 MiB) copied, 14,4608 s, 18,6 MB/s
+Killed
+
+# dmesg
+[  152.693093] loop: Write error at byte offset 527499264, length 4096.
+[  152.694868] print_req_error: I/O error, dev loop0, sector 1030272
+[  152.695293] Buffer I/O error on dev loop0, logical block 128784, lost async page write
+[  152.696942] loop: Write error at byte offset 527503360, length 4096.
+[  152.697337] print_req_error: I/O error, dev loop0, sector 1030280
+[  152.697739] Buffer I/O error on dev loop0, logical block 128785, lost async page write
+[  152.699255] loop: Write error at byte offset 527507456, length 4096.
+[  152.699697] print_req_error: I/O error, dev loop0, sector 1030288
+[  152.700114] Buffer I/O error on dev loop0, logical block 128786, lost async page write
+[  152.700908] loop: Write error at byte offset 527511552, length 4096.
+[  152.701340] print_req_error: I/O error, dev loop0, sector 1030296
+[  152.701776] Buffer I/O error on dev loop0, logical block 128787, lost async page write
+[  152.704423] loop: Write error at byte offset 527515648, length 4096.
+[  152.705171] print_req_error: I/O error, dev loop0, sector 1030304
+[  152.705624] Buffer I/O error on dev loop0, logical block 128788, lost async page write
+[  152.707085] loop: Write error at byte offset 527519744, length 4096.
+[  152.707561] print_req_error: I/O error, dev loop0, sector 1030312
+[  152.708036] Buffer I/O error on dev loop0, logical block 128789, lost async page write
+[  152.709059] loop: Write error at byte offset 527523840, length 4096.
+[  152.710239] print_req_error: I/O error, dev loop0, sector 1030320
+[  152.711102] Buffer I/O error on dev loop0, logical block 128790, lost async page write
+[  152.713304] loop: Write error at byte offset 527527936, length 4096.
+[  152.713821] print_req_error: I/O error, dev loop0, sector 1030328
+[  152.714407] Buffer I/O error on dev loop0, logical block 128791, lost async page write
+[  152.715965] loop: Write error at byte offset 527532032, length 4096.
+[  152.716537] print_req_error: I/O error, dev loop0, sector 1030336
+[  152.717076] Buffer I/O error on dev loop0, logical block 128792, lost async page write
+[  152.718523] loop: Write error at byte offset 527536128, length 4096.
+[  152.719087] print_req_error: I/O error, dev loop0, sector 1030344
+[  152.719680] Buffer I/O error on dev loop0, logical block 128793, lost async page write
+[  210.738320] lo_write_bvec: 6330 callbacks suppressed
+[  210.738323] loop: Write error at byte offset 527499264, length 4096.
+[  210.740799] print_req_error: 6330 callbacks suppressed
+[  210.740800] print_req_error: I/O error, dev loop0, sector 1030272
+[  210.741475] buffer_io_error: 6330 callbacks suppressed
+[  210.741477] Buffer I/O error on dev loop0, logical block 128784, lost async page write
+[  210.744387] loop: Write error at byte offset 527503360, length 4096.
+[  210.745506] print_req_error: I/O error, dev loop0, sector 1030280
+[  210.746407] Buffer I/O error on dev loop0, logical block 128785, lost async page write
+[  210.748001] loop: Write error at byte offset 527507456, length 4096.
+[  210.749083] print_req_error: I/O error, dev loop0, sector 1030288
+[  210.749940] Buffer I/O error on dev loop0, logical block 128786, lost async page write
+[  210.751705] loop: Write error at byte offset 527511552, length 4096.
+[  210.752425] print_req_error: I/O error, dev loop0, sector 1030296
+[  210.753445] Buffer I/O error on dev loop0, logical block 128787, lost async page write
+[  210.755182] loop: Write error at byte offset 527515648, length 4096.
+[  210.756218] print_req_error: I/O error, dev loop0, sector 1030304
+[  210.758353] Buffer I/O error on dev loop0, logical block 128788, lost async page write
+[  210.761891] loop: Write error at byte offset 527519744, length 4096.
+[  210.762584] print_req_error: I/O error, dev loop0, sector 1030312
+[  210.763220] Buffer I/O error on dev loop0, logical block 128789, lost async page write
+[  210.764239] loop: Write error at byte offset 527523840, length 4096.
+[  210.765362] print_req_error: I/O error, dev loop0, sector 1030320
+[  210.766264] Buffer I/O error on dev loop0, logical block 128790, lost async page write
+[  210.768088] loop: Write error at byte offset 527527936, length 4096.
+[  210.769273] print_req_error: I/O error, dev loop0, sector 1030328
+[  210.770196] Buffer I/O error on dev loop0, logical block 128791, lost async page write
+[  210.771994] loop: Write error at byte offset 527532032, length 4096.
+[  210.772748] print_req_error: I/O error, dev loop0, sector 1030336
+[  210.773484] Buffer I/O error on dev loop0, logical block 128792, lost async page write
+[  210.775073] loop: Write error at byte offset 527536128, length 4096.
+[  210.775710] print_req_error: I/O error, dev loop0, sector 1030344
+[  210.776338] Buffer I/O error on dev loop0, logical block 128793, lost async page write
+[  279.603993] lo_write_bvec: 6330 callbacks suppressed
+[  279.603995] loop: Write error at byte offset 527765504, length 4096.
+[  279.605900] print_req_error: 6330 callbacks suppressed
+[  279.605901] print_req_error: I/O error, dev loop0, sector 1030792
+[  279.606708] buffer_io_error: 6330 callbacks suppressed
+[  279.606710] Buffer I/O error on dev loop0, logical block 128849, lost async page write
+[  279.609302] loop: Write error at byte offset 527769600, length 4096.
+[  279.609901] print_req_error: I/O error, dev loop0, sector 1030800
+[  279.610580] Buffer I/O error on dev loop0, logical block 128850, lost async page write
+[  279.611898] loop: Write error at byte offset 527773696, length 4096.
+[  279.612584] print_req_error: I/O error, dev loop0, sector 1030808
+[  279.613209] Buffer I/O error on dev loop0, logical block 128851, lost async page write
+[  279.614151] loop: Write error at byte offset 527777792, length 4096.
+[  279.614796] print_req_error: I/O error, dev loop0, sector 1030816
+[  279.615377] Buffer I/O error on dev loop0, logical block 128852, lost async page write
+[  279.616890] loop: Write error at byte offset 527781888, length 4096.
+[  279.617474] print_req_error: I/O error, dev loop0, sector 1030824
+[  279.618187] Buffer I/O error on dev loop0, logical block 128853, lost async page write
+[  279.619851] loop: Write error at byte offset 527785984, length 4096.
+[  279.622833] print_req_error: I/O error, dev loop0, sector 1030832
+[  279.623883] Buffer I/O error on dev loop0, logical block 128854, lost async page write
+[  279.625889] loop: Write error at byte offset 527790080, length 4096.
+[  279.626624] print_req_error: I/O error, dev loop0, sector 1030840
+[  279.627283] Buffer I/O error on dev loop0, logical block 128855, lost async page write
+[  279.628757] loop: Write error at byte offset 527794176, length 4096.
+[  279.629394] print_req_error: I/O error, dev loop0, sector 1030848
+[  279.630075] Buffer I/O error on dev loop0, logical block 128856, lost async page write
+[  279.631576] loop: Write error at byte offset 527798272, length 4096.
+[  279.632162] print_req_error: I/O error, dev loop0, sector 1030856
+[  279.632742] Buffer I/O error on dev loop0, logical block 128857, lost async page write
+[  279.633730] loop: Write error at byte offset 527802368, length 4096.
+[  279.634390] print_req_error: I/O error, dev loop0, sector 1030864
+[  279.635039] Buffer I/O error on dev loop0, logical block 128858, lost async page write
+[  287.319530] lo_write_bvec: 6265 callbacks suppressed
+[  287.319532] loop: Write error at byte offset 284823552, length 4096.
+[  287.321727] print_req_error: 6265 callbacks suppressed
+[  287.321728] print_req_error: I/O error, dev loop0, sector 556296
+[  287.322653] buffer_io_error: 6265 callbacks suppressed
+[  287.322656] Buffer I/O error on dev loop0, logical block 69537, lost async page write
+[  287.323970] loop: Write error at byte offset 289021952, length 4096.
+[  287.325051] print_req_error: I/O error, dev loop0, sector 564496
+[  287.326408] Buffer I/O error on dev loop0, logical block 70562, lost async page write
+[  287.329286] loop: Write error at byte offset 289026048, length 4096.
+[  287.330630] print_req_error: I/O error, dev loop0, sector 564504
+[  287.333064] Buffer I/O error on dev loop0, logical block 70563, lost async page write
+[  287.333800] loop: Write error at byte offset 293224448, length 4096.
+[  287.334862] print_req_error: I/O error, dev loop0, sector 572704
+[  287.335743] Buffer I/O error on dev loop0, logical block 71588, lost async page write
+[  287.336534] loop: Write error at byte offset 297422848, length 4096.
+[  287.337523] print_req_error: I/O error, dev loop0, sector 580904
+[  287.338660] Buffer I/O error on dev loop0, logical block 72613, lost async page write
+[  287.339834] loop: Write error at byte offset 301621248, length 4096.
+[  287.340482] print_req_error: I/O error, dev loop0, sector 589104
+[  287.341444] Buffer I/O error on dev loop0, logical block 73638, lost async page write
+[  287.342856] loop: Write error at byte offset 305819648, length 4096.
+[  287.344057] print_req_error: I/O error, dev loop0, sector 597304
+[  287.345204] Buffer I/O error on dev loop0, logical block 74663, lost async page write
+[  287.346388] loop: Write error at byte offset 310018048, length 4096.
+[  287.347555] print_req_error: I/O error, dev loop0, sector 605504
+[  287.348507] Buffer I/O error on dev loop0, logical block 75688, lost async page write
+[  287.349491] loop: Write error at byte offset 314216448, length 4096.
+[  287.350250] print_req_error: I/O error, dev loop0, sector 613704
+[  287.352289] Buffer I/O error on dev loop0, logical block 76713, lost async page write
+[  287.353563] loop: Write error at byte offset 318414848, length 4096.
+[  287.354194] print_req_error: I/O error, dev loop0, sector 621904
+[  287.354844] Buffer I/O error on dev loop0, logical block 77738, lost async page write
+[  287.359123] BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
+[  287.360349] IP: minix_write_begin+0x446/0x7c0 [btrminix]
+[  287.361227] PGD 0 
+[  287.361229] P4D 0 
+
+[  287.363362] Oops: 0000 [#1] SMP PTI
+[  287.363942] Modules linked in: btrminix(OE) vboxsf(OE) intel_powerclamp crct10dif_pclmul crc32_pclmul ghash_clmulni_intel pcbc aesni_intel aes_x86_64 crypto_simd glue_helper joydev cryptd intel_rapl_perf snd_intel8x0 snd_ac97_codec ac97_bus snd_pcm pci_stub vboxpci(OE) vboxnetadp(OE) vboxnetflt(OE) vboxdrv(OE) snd_seq_midi snd_seq_midi_event snd_rawmidi input_leds serio_raw snd_seq vboxvideo(OE) snd_seq_device ttm snd_timer drm_kms_helper snd mac_hid drm soundcore vboxguest(OE) i2c_piix4 fb_sys_fops syscopyarea sysfillrect sysimgblt parport_pc ppdev lp parport ip_tables x_tables autofs4 hid_generic usbhid hid psmouse ahci libahci e1000 pata_acpi video
+[  287.368985] CPU: 0 PID: 1284 Comm: dd Tainted: G           OE   4.13.0-31-generic #34-Ubuntu
+[  287.369655] Hardware name: innotek GmbH VirtualBox/VirtualBox, BIOS VirtualBox 12/01/2006
+[  287.370967] task: ffff893cf137dd00 task.stack: ffff9c1e804a4000
+[  287.373120] RIP: 0010:minix_write_begin+0x446/0x7c0 [btrminix]
+[  287.373928] RSP: 0018:ffff9c1e804a7ca8 EFLAGS: 00010206
+[  287.374903] RAX: 0000000000000000 RBX: 0000000000015460 RCX: 0000000000000000
+[  287.376193] RDX: 0000000000007f86 RSI: 00000000a4838540 RDI: ffff893cfb2043a8
+[  287.376825] RBP: ffff9c1e804a7d20 R08: 000000000000016c R09: 0000000000000000
+[  287.377471] R10: 000000000000b680 R11: 00000000000003df R12: ffff893cf5bd7000
+[  287.378156] R13: 00000000000163b7 R14: ffff893cf9970800 R15: ffff893cc0a5d400
+[  287.378901] FS:  00007f86a4838540(0000) GS:ffff893cffc00000(0000) knlGS:0000000000000000
+[  287.379553] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  287.380205] CR2: 0000000000000028 CR3: 000000003daee000 CR4: 00000000000406f0
+[  287.381039] Call Trace:
+[  287.381784]  generic_perform_write+0xb9/0x1a0
+[  287.382507]  __generic_file_write_iter+0x1aa/0x1d0
+[  287.383145]  generic_file_write_iter+0xe9/0x1f0
+[  287.383748]  new_sync_write+0xe1/0x130
+[  287.384510]  __vfs_write+0x26/0x40
+[  287.385102]  vfs_write+0xb1/0x1a0
+[  287.385639]  SyS_write+0x55/0xc0
+[  287.386180]  ? entry_SYSCALL_64_after_hwframe+0xa8/0x168
+[  287.386799]  entry_SYSCALL_64_fastpath+0x33/0xa3
+[  287.387315] RIP: 0033:0x7f86a434d0c4
+[  287.387900] RSP: 002b:00007ffdc90500b8 EFLAGS: 00000246 ORIG_RAX: 0000000000000001
+[  287.388621] RAX: ffffffffffffffda RBX: 0000000000000000 RCX: 00007f86a434d0c4
+[  287.389375] RDX: 0000000000100000 RSI: 00007f86a4735000 RDI: 0000000000000001
+[  287.389982] RBP: 0000000000100000 R08: ffffffffffffffff R09: 00007f86a4734010
+[  287.391437] R10: 0000000000000022 R11: 0000000000000246 R12: 00007f86a4735000
+[  287.393530] R13: 0000000000000000 R14: 0000000000000000 R15: 00007f86a4735000
+[  287.394311] Code: b1 ff ff 83 f8 01 48 8b 45 c8 0f 87 f9 00 00 00 44 8b 28 49 8b 56 18 49 8b be d0 00 00 00 b9 08 00 00 00 4c 89 ee e8 ba 1b 8d e7 <4c> 8b 70 28 49 8d 86 00 04 00 00 4d 89 f7 48 89 45 d0 eb 0e 49 
+[  287.396094] RIP: minix_write_begin+0x446/0x7c0 [btrminix] RSP: ffff9c1e804a7ca8
+[  287.396609] CR2: 0000000000000028
+[  287.397228] ---[ end trace 8af2eda34ae66dd5 ]---
