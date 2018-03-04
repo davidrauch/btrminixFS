@@ -1,0 +1,14 @@
+
+ Performance counter stats for './_do_copy.sh' (1000 runs):
+
+          2.879087      task-clock (msec)         #    0.457 CPUs utilized            ( +-  0.42% )
+                18      context-switches          #    0.006 M/sec                    ( +-  0.39% )
+                 0      cpu-migrations            #    0.018 K/sec                    ( +- 15.50% )
+               255      page-faults               #    0.089 M/sec                    ( +-  0.04% )
+   <not supported>      cycles                                                      
+   <not supported>      instructions                                                
+   <not supported>      branches                                                    
+   <not supported>      branch-misses                                               
+
+       0.006300692 seconds time elapsed                                          ( +-  0.55% )
+

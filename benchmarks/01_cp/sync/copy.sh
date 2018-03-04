@@ -9,7 +9,7 @@ do
   	dd if=/dev/urandom of=/tmp/testmount/test.dat bs=1k count=$i
 
 	# Create report with iterations
-	(perf stat -B -r 1000 cp /tmp/testmount/test.dat /tmp/testmount/test_copy.dat > /dev/null) 2> results/btrminix_copy_$i.out
+	(perf stat -B -r 1000 ./_do_copy.sh > /dev/null) 2> results/btrminix_copy_$i.out
 done
 
 # Alternatively: Create perf.data

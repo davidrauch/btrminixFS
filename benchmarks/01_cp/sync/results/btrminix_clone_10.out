@@ -1,0 +1,14 @@
+
+ Performance counter stats for './_do_clone.sh' (1000 runs):
+
+          1.883694      task-clock (msec)         #    0.473 CPUs utilized            ( +-  0.51% )
+                11      context-switches          #    0.006 M/sec                    ( +-  0.72% )
+                 0      cpu-migrations            #    0.096 K/sec                    ( +-  9.81% )
+               253      page-faults               #    0.135 M/sec                    ( +-  0.04% )
+   <not supported>      cycles                                                      
+   <not supported>      instructions                                                
+   <not supported>      branches                                                    
+   <not supported>      branch-misses                                               
+
+       0.003982721 seconds time elapsed                                          ( +-  0.44% )
+
